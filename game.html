@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Symposium Run</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen&family=Archivo:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE  occasion: a retro arcade cabinet for combustion students, with a climate mission
+   IDEA   a pixel platformer through the first International Symposia on Combustion; each city drawn as itself; emissions are the enemies
+   PICTURE the game screen, framed like a cabinet; question cards fly out of the blocks
+   COLOUR bright city skies per symposium, flame orange #ff8a3d, droplet blue, amber blocks, leaf green for captured carbon
+   TYPE   Silkscreen for game lettering + Archivo for questions
+   LAYOUT game screen full width; touch pad under it on phones; quiz and cards as modals over the screen */
+:root{color-scheme:dark;--bg:#07080d;--ink:#eef0f5;--mute:#9aa0ad;--fl:#ff8a3d;--cy:#4fb6ff;--am:#ffc23d;--ok:#5ee39a;--bad:#ff6b6b;--leaf:#7be08a;--panel:#11131b;--line:#262934}
+*{box-sizing:border-box;min-width:0}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Archivo,Helvetica,Arial,sans-serif;overflow-x:clip;-webkit-tap-highlight-color:transparent}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:12px max(4vw,16px)}
+header a{color:var(--mute);text-decoration:none;font-size:15px}
+header a:hover{color:#fff}
+.logo{font-family:Silkscreen,monospace;font-size:20px;color:#fff}
+.logo span{color:var(--fl)}
+.cab{max-width:1100px;margin:0 auto;padding:0 max(2vw,10px)}
+.screen{position:relative;border:4px solid #1d2030;border-radius:14px;overflow:hidden;background:#000;box-shadow:0 0 0 2px #000,0 20px 60px rgba(255,138,61,.12)}
+canvas#cv{display:block;width:100%;aspect-ratio:384/224;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none}
+.hud{position:absolute;left:0;right:0;top:0;display:flex;justify-content:space-between;gap:10px;padding:8px 12px;font-family:Silkscreen,monospace;font-size:clamp(10px,1.5vw,15px);pointer-events:none;text-shadow:0 2px 0 #000,0 0 6px #000}
+.hud b{color:var(--am);font-weight:400}
+.hud i{color:var(--leaf);font-style:normal}
+.ov{position:absolute;inset:0;display:none;align-items:center;justify-content:center;padding:12px;background:rgba(5,6,10,.72)}
+.ov.on{display:flex}
+.card{background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:clamp(14px,2.4vw,26px);width:min(100%,660px);max-height:100%;overflow:auto}
+.qcard{background:#0d1a4a;border:3px solid var(--am);box-shadow:0 0 0 3px #060b24,0 18px 50px rgba(0,0,0,.6)}
+.card h2{font-family:Silkscreen,monospace;font-weight:400;font-size:clamp(18px,2.6vw,26px);line-height:1.15;margin:0 0 8px}
+.card p{margin:6px 0;color:#cfd3dd}
+.k{font-family:Silkscreen,monospace;font-size:12px;color:var(--am)}
+.opts{display:grid;gap:8px;margin-top:12px}
+.opts button,.btn{font:600 15.5px Archivo,Helvetica,sans-serif;text-align:left;min-height:46px;padding:10px 14px;border-radius:10px;border:2px solid var(--line);background:#181b26;color:#fff;cursor:pointer}
+.qcard .opts button{background:#12245e;border-color:#2b3f8a}
+.opts button:hover:not(:disabled),.btn:hover{border-color:var(--am)}
+.opts button:focus-visible,.btn:focus-visible,input:focus-visible{outline:2px solid var(--am);outline-offset:2px}
+.qcard .opts button.ok{border-color:var(--ok);background:#123a2a}
+.qcard .opts button.no{border-color:var(--bad);background:#4a1820}
+.opts button:disabled{cursor:default}
+.opts .n{display:inline-block;width:1.6em;color:var(--am);font-family:Silkscreen,monospace}
+.exp{margin-top:12px;padding:12px;border-radius:10px;background:#081233;border-left:3px solid var(--am);display:none}
+.exp.on{display:block}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.btn.main{background:var(--fl);color:#160700;border-color:var(--fl);text-align:center}
+.pick{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
+.pick button{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+.pick canvas{width:72px;aspect-ratio:12/16;image-rendering:pixelated}
+.pick button[aria-pressed=true],.mode button[aria-pressed=true]{border-color:var(--am);background:#2a2210}
+.mode{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
+.mode button{text-align:center}
+.fact{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 14px;margin:12px 0;font-size:15px}
+.fact dt{color:var(--mute)}
+.fact dd{margin:0}
+.badge{display:flex;align-items:center;gap:12px;margin-top:10px;padding:10px 12px;border-radius:10px;background:#1c1a10;border:1px solid #4b3d10}
+.badge svg{width:40px;height:40px;flex:none}
+.thermo{display:none;align-items:center;gap:10px;margin:22px 0 10px}
+.thermo.on{display:flex}
+.thermo .bulb{width:22px;height:22px;border-radius:50%;flex:none;background:var(--tc,#4fb6ff);box-shadow:0 0 0 3px #06102e}
+.thermo .tube{position:relative;flex:1;height:12px;border-radius:6px;background:#06102e;border:2px solid #2b3f8a;overflow:visible}
+.thermo .fill{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:var(--tc,#4fb6ff);width:0}
+.thermo .mark{position:absolute;top:-6px;bottom:-6px;width:2px;background:#fff}
+.thermo .mark span{position:absolute;top:-16px;left:-22px;font:10px Silkscreen,monospace;color:#fff;white-space:nowrap}
+.thermo b{font:14px Silkscreen,monospace;color:#fff;white-space:nowrap;min-width:5.5em;text-align:right}
+.climate{margin-top:10px;padding:10px 12px;border-radius:10px;background:#0f2216;border:1px solid #24583a;color:#cfeedd;font-size:15px}
+.save{margin-top:14px;padding:14px;border-radius:10px;background:#0b0d14;border:1px solid var(--line);display:grid;gap:10px}
+.save label{display:grid;gap:4px;font-size:14px;color:#c9cdd8}
+.save input[type=text],.save input[type=email]{font:16px Archivo,sans-serif;min-height:44px;padding:0 12px;border-radius:8px;border:1px solid #3a3f4d;background:#11131b;color:#fff}
+.save .chk{display:flex;gap:8px;align-items:flex-start;font-size:14px}
+.save .chk input{width:20px;height:20px;margin-top:2px;flex:none}
+.msg{font-size:14px;color:var(--cy);margin:0;min-height:1em}
+table.lb{width:100%;border-collapse:collapse;margin-top:10px;font-size:15px}
+.lb th,.lb td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left}
+.lb td.r,.lb th.r{text-align:right;font-variant-numeric:tabular-nums}
+.lb tr.me td{color:var(--am)}
+.pad{display:none;justify-content:space-between;gap:12px;padding:14px 4px 4px;user-select:none;-webkit-user-select:none}
+.pad div{display:flex;gap:12px}
+.pad button{width:72px;height:72px;border-radius:50%;border:2px solid #2c3040;background:#141722;color:#fff;font:20px Silkscreen,monospace;touch-action:none}
+.pad button.j{width:84px;height:84px;background:#2a1a10;border-color:var(--fl)}
+@media(pointer:coarse){.pad{display:flex}}
+@media(max-width:700px){.ov{position:fixed;z-index:20;padding:10px}.card{max-height:calc(100svh - 20px)}}
+.help{max-width:1100px;margin:14px auto 0;padding:0 max(2vw,10px);display:flex;justify-content:space-between;gap:10px 24px;flex-wrap:wrap;color:var(--mute);font-size:14px}
+.help kbd{font-family:Silkscreen,monospace;font-size:12px;border:1px solid var(--line);border-radius:5px;padding:1px 6px;color:#fff}
+.rot{display:none;color:var(--am)}
+@media(max-width:600px) and (orientation:portrait){.rot{display:inline}}
+footer{max-width:1100px;margin:22px auto 30px;padding:0 max(2vw,10px);color:#6f7584;font-size:13px}
+@media(prefers-reduced-motion:reduce){.qcard{transition:none!important}}
+</style>
+</head>
+<body>
+<header><span class="logo">Symposium <span>Run</span></span><span style="display:flex;gap:16px;align-items:center;flex-wrap:wrap"><button type="button" class="btn" id="mus" aria-pressed="false" style="min-height:40px;padding:6px 14px">♪ Music off</button><a href="index.html">← Back to A. A. Yontar</a></span></header>
+<div class="cab">
+  <div class="screen" id="screen">
+    <canvas id="cv" width="384" height="224" aria-label="Game screen"></canvas>
+    <div class="hud" aria-live="off"><span id="hlvl">1st Symposium · 1928</span><span>Score <b id="hsc">0</b> · <i id="hcc">CO₂ 0</i> · <span id="hlife">♥♥♥</span></span></div>
+
+    <div class="ov on" id="ovTitle"><div class="card">
+      <span class="k">A combustion and climate game</span>
+      <h2>Symposium Run</h2>
+      <p>Travel through all 42 International Symposia on Combustion, from Swampscott 1928 to Brazil, across eight eras: thermochemistry, kinetics, laminar flames, droplets and sprays, turbulence, pollutants, detonation and the energy transition. Each era plays differently. Stomp the emissions, collect O₂ and air, and open the <b style="color:var(--am)">?</b> blocks: some hold questions on combustion and climate. Questions change every time you play.</p>
+      <p class="k" style="margin-top:12px">Choose your hero</p>
+      <div class="pick" id="pick"></div>
+      <p class="k" style="margin-top:12px">Choose your level</p>
+      <div class="mode" id="mode"><button type="button" class="btn" data-m="ug" aria-pressed="true">Undergraduate</button><button type="button" class="btn" data-m="gr" aria-pressed="false">Graduate</button></div>
+      <div class="row"><button type="button" class="btn main" id="start">Start the journey</button><button type="button" class="btn" id="cont" hidden></button><button type="button" class="btn" id="lbBtn">Leaderboard</button></div>
+    </div></div>
+
+    <div class="ov" id="ovQ"><div class="card qcard" id="qcard" role="dialog" aria-modal="true" aria-labelledby="qtext">
+      <span class="k" id="qtag">Question</span>
+      <h2 id="qtext" style="font-family:Archivo,sans-serif;font-weight:800;font-size:clamp(17px,2.2vw,21px);line-height:1.3"></h2>
+      <div class="thermo" id="thermo"><span class="bulb"></span><span class="tube"><span class="fill" id="tfill"></span><span class="mark" style="left:44.4%"><span>Paris 1.5 °C</span></span></span><b id="tval">+1.1 °C</b></div>
+      <div class="opts" id="qopts"></div>
+      <div class="exp" id="qexp"></div>
+      <div class="row"><button type="button" class="btn main" id="qnext" hidden>Continue</button></div>
+    </div></div>
+
+    <div class="ov" id="ovCard"><div class="card" id="cardBody"></div></div>
+  </div>
+  <div class="pad" id="pad"><div><button type="button" data-k="L" aria-label="Left">◀</button><button type="button" data-k="R" aria-label="Right">▶</button></div><div><button type="button" class="j" data-k="J" aria-label="Jump">▲</button></div></div>
+</div>
+<div class="help"><span>Move <kbd>←</kbd> <kbd>→</kbd> or <kbd>A</kbd> <kbd>D</kbd> · Jump <kbd>Space</kbd> <kbd>↑</kbd> <kbd>W</kbd> · Answer <kbd>1</kbd>–<kbd>4</kbd></span><span>Stomp emissions from above. O₂ gives a hot flame with a 3-second shield; air gives a cool, low-temperature flame that NOx and soot cannot harm. Glowing enemies are about to knock. <span class="rot">Turn your phone sideways for a bigger screen.</span></span></div>
+<footer>Symposium Run is an independent educational game by Ahmet Alper Yontar. It is not affiliated with or endorsed by The Combustion Institute. Symposium dates and places follow the Institute's public list. Numerical answers were computed with Cantera (GRI-Mech 3.0, chemical equilibrium); global warming potentials follow IPCC AR6. City skylines are drawn freely and are not to scale. The leaderboard stores only a username, a score and a random device code; no email is collected in the game. <a href="privacy.html" style="color:#9aa0ad">Privacy notice (KVKK)</a>.</footer>
+
+<script>
+{
+/* Online leaderboard: paste the Google Apps Script web-app URL here. Empty = scores stay on this device. */
+const API="";
+
+/* ---------- symposia ---------- */
+const SYMP=[
+ {n:"1st",place:"Swampscott, Massachusetts",date:"September 1928",chair:"George Granger Brown",y:1928,city:"swampscott",sky:["#f08a5d","#ffd9b3"],far:"#c9775a",mid:"#8a4a3a",acc:"#ff8a3d",badge:"Stoichiometry Scout",foe:"Carbon",foeC:["#454552","#8b8ba0","#1a1a22"],note:"Burning 1 kg of carbon makes 3.67 kg of CO₂, because each 12 g of carbon picks up 32 g of oxygen."},
+ {n:"2nd",place:"Rochester, New York",date:"September 1937",chair:"Bernard Lewis",y:1937,city:"rochester",sky:["#8f7fd0","#f0d2ef"],far:"#9a86c0",mid:"#5a4a7a",acc:"#c9a6ff",badge:"Heating Value Hunter",foe:"CO",foeC:["#c23b3b","#ff8a7a","#4a1010"],note:"Carbon monoxide comes from incomplete combustion. It is toxic, and in the atmosphere it is oxidized to CO₂."},
+ {n:"3rd",place:"Madison, Wisconsin",date:"September 1948",chair:"Bernard Lewis",y:1948,city:"madison",sky:["#57b3cf","#e3f6f0"],far:"#7fbfc4",mid:"#3f6f78",acc:"#5ee3d0",badge:"Enthalpy Engineer",foe:"Soot",foeC:["#2e2a28","#6e655e","#0e0c0b"],note:"Soot harms the lungs, and when black carbon settles on snow and ice it darkens them and speeds up melting."},
+ {n:"4th",place:"Cambridge, Massachusetts",date:"September 1952",chair:"Stewart Way (papers chair)",y:1952,city:"cambridge",sky:["#e0789f","#fbe0cf"],far:"#d494a6",mid:"#7a4058",acc:"#ff6bb0",badge:"Equilibrium Explorer",foe:"NOx",foeC:["#c77a16","#ffc46b","#4a2a04"],note:"NOx forms in hot flames. It drives smog and acid rain, and its relative N₂O is a strong greenhouse gas."},
+ {n:"5th",place:"Pittsburgh, Pennsylvania",date:"August 1954",chair:"Stewart Way and Glenn C. Williams (papers co-chairs)",y:1954,city:"pittsburgh",sky:["#3a5aa0","#f2a46a"],far:"#7a6a8a",mid:"#2c2f4a",acc:"#4fb6ff",badge:"Adiabatic Ace",foe:"CO₂",foeC:["#3a8a9a","#9fe3ee","#0c2a30"],note:"CO₂ is the main long-lived greenhouse gas from burning fuels. Steel cities like Pittsburgh are now testing hydrogen to cut it."}
+];
+
+const MORE=[
+ ["6th","New Haven, Connecticut","1956","Walter T. Olson (papers chair)"],["7th","Oxford, United Kingdom","August 1958","J. W. Linnett (papers chair)"],["8th","Pasadena, California","August 1960","S. S. Penner (papers chair)"],["9th","Ithaca, New York","August 1962","Walter G. Berl (papers chair)"],["10th","Cambridge, England","August 1964","Raymond Friedman (program chair)"],["11th","Berkeley, California","August 1966","A. L. Berlad (program chair)"],
+ ["12th","Poitiers, France","July 1968","Marjorie W. Evans"],["13th","Salt Lake City, Utah","August 1970","Melvin Gerstein"],["14th","State College, Pennsylvania","August 1972","J. P. Longwell"],["15th","Tokyo, Japan","August 1974","William C. Shipman"],["16th","Cambridge, Massachusetts","August 1976","Frederick Kaufman"],["17th","Leeds, United Kingdom","August 1978","Roger Strehlow"],
+ ["18th","Waterloo, Canada","August 1980","Robert M. Fristrom"],["19th","Haifa, Israel","August 1982","Jack B. Howard"],["20th","Ann Arbor, Michigan","August 1984","C. T. Bowman"],["21st","Munich, West Germany","August 1986","Daniel J. Seery"],["22nd","Seattle, Washington","August 1988","Gerard M. Faeth"],["23rd","Orléans, France","July 1990","Richard G. Gann"],
+ ["24th","Sydney, Australia","July 1992","Chung K. Law"],["25th","Irvine, California","August 1994","Elaine S. Oran"],["26th","Naples, Italy","August 1996","Norbert Peters and Charles K. Westbrook"],["27th","Boulder, Colorado","August 1998","Donald R. Hardesty and Brian Haynes"],["28th","Edinburgh, Scotland","August 2000","James F. Driscoll and Sebastien Candel"],["29th","Hokkaido, Japan","July 2002","Jurgen Troe and Forman A. Williams"],
+ ["30th","Chicago, Illinois","July 2004","Ron Hanson and Peter Lindstedt"],["31st","Heidelberg, Germany","August 2006","Marcus Aldén and Stephen B. Pope"],["32nd","Montreal, Canada","August 2008","Mitch Smooke and Hideaki Kobayashi"],["33rd","Beijing, China","August 2010","Philippe Dagaut and Paul Ronney"],["34th","Warsaw, Poland","August 2012","Frédérique Battin-Leclerc, Kaoru Maruta and Robert Barlow"],["35th","San Francisco, California","August 2014","Suk-Ho Chung and Thierry Poinsot"],
+ ["36th","Seoul, Korea","August 2016","Peter Glarborg and Assaad Masri"],["37th","Dublin, Ireland","August 2018","Heinz Pitsch and Hai Wang"],["38th","Adelaide, Australia","January 2021","Tim Lieuwen and Fei Qi"],["39th","Vancouver, Canada","July 2022","Bénédicte Cuenot and Nils Hansen"],
+ ["40th","Milan, Italy","July 2024","Bassam Dally and José L. Torero"],["41st","Kyoto, Japan","26–31 July 2026",""],["42nd","Brazil","to be announced",""]];
+const SKIES=[["#5d8fd6","#e8d8f0","#8aa6d8","#3a4a7a","#4fb6ff"],["#e3906a","#fbe3c4","#d7a084","#7a4a3a","#ff8a3d"],["#4fb39a","#e0f4e6","#7fc4b0","#2f6a5a","#5ee3d0"],["#a07ad0","#f2dcf2","#b496d8","#5a3a7a","#c9a6ff"],["#d46a8a","#fadcd2","#d894aa","#7a3a52","#ff6bb0"],["#3f7fb3","#d8eef8","#80a8c8","#2a4a6a","#6fd3ff"]];
+/* landmarks and landscape per symposium (index = symposium number − 1), each only if it existed in that year */
+const DECO={5:['gothic'],6:['spires'],7:['mountains','palms'],8:['lake','gorge'],9:['chapel'],10:['campanile','palms'],11:['cathedral'],12:['snow'],13:['hills','barn'],
+ 14:['fuji','tokyotower'],16:['clock'],17:['maples'],18:['sea','shrine'],19:['clock','maples'],20:['twindomes'],21:['snow','needle'],22:['cathedral'],23:['sea','opera'],24:['palms'],25:['sea','vesuvius'],
+ 26:['flatirons'],27:['castle'],28:['snow','pines'],29:['lake','towers'],30:['castle','bridge'],31:['mountains','maples'],32:['temple'],33:['palace'],34:['sea','goldengate','palms'],35:['mountains','seoultower'],
+ 36:['bridge'],37:['hills','eucalyptus'],38:['snow','sea'],39:['duomo'],40:['sakura','pagoda','torii'],41:['hills','palms']};
+const ATMO={16:'acoustics',19:'spectroscopy',37:'laser'};
+const BADGES2=["Arrhenius Apprentice","Chain Carrier","Branching Builder","Explosion Limit Expert","Ignition Investigator","Kinetics Master"];
+const FOES=["Carbon","CO","Soot","NOx","CO₂","CH₄ leak","N₂O","Soot","NOx","CO","CO₂"];
+const FOEC=[["#454552","#8b8ba0","#1a1a22"],["#c23b3b","#ff8a7a","#4a1010"],["#2e2a28","#6e655e","#0e0c0b"],["#c77a16","#ffc46b","#4a2a04"],["#3a8a9a","#9fe3ee","#0c2a30"],["#6a8a2a","#c4e07a","#24300c"],["#8a3a9a","#e0a0ee","#2c0c30"]];
+MORE.forEach((m,j)=>{const i=5+j,cityName=i===15?'cambridge':'generic',sk=SKIES[j%SKIES.length],yr=(m[2].match(/\d{4}/)||[''])[0];SYMP.push({n:m[0],place:m[1],date:m[2],chair:m[3]||'to be announced',y:yr||'TBA',city:cityName,sky:[sk[0],sk[1]],far:sk[2],mid:sk[3],acc:sk[4],badge:BADGES2[j]||'',foe:FOES[i%FOES.length],foeC:FOEC[i%FOEC.length],note:''})});
+const ERAS=[
+ {name:"Thermochemistry",from:0,to:4,mech:"boxes",years:"1928–1954",how:"Open the ? blocks and catch the cloud's questions."},
+ {name:"Chemical kinetics and ignition",from:5,to:10,mech:"chain",years:"1956–1966",how:"Build the hydrogen–oxygen chain: collect radicals in the order H → O → OH. Each correct step is a real elementary reaction. Touch HO₂ and the chain terminates."},
+ {name:"Laminar flames",from:11,to:16,mech:"chase",years:"1968–1978",how:"Outrun the flame front. It advances at the laminar burning velocity of each symposium's mixture, from slow ammonia to fast hydrogen."},
+ {name:"Droplets and sprays",from:17,to:22,mech:"droplet",years:"1980–1990",how:"You are a burning droplet. By the d²-law your diameter squared shrinks at a steady rate: collect fuel drops to keep burning until the gate."},
+ {name:"Turbulent combustion",from:23,to:28,mech:"eddy",years:"1992–2002",how:"Turbulent eddies push you around. Ride them: turbulence wrinkles flames and makes them burn faster."},
+ {name:"Pollutants and soot",from:29,to:34,mech:"boss",years:"2004–2014",how:"A giant NOx guards each symposium gate. Stomp it three times to clean the exhaust."},
+ {name:"Detonation and propulsion",from:35,to:38,mech:"shock",years:"2016–2022",how:"A detonation wave chases you at supersonic pace. Keep running and do not let the shock catch you."},
+ {name:"Energy transition",from:39,to:41,mech:"fuel",years:"2024 onward",how:"Collect clean fuels (H₂, NH₃, e-fuels, biofuels) and avoid fossil coal and oil. The journey ends in Brazil."}];
+const BOOKS={
+ 0:{t:"An Introduction to Combustion: Concepts and Applications",a:"Stephen R. Turns",p:"McGraw-Hill, 3rd edition, 2012 (a 4th edition with Daniel C. Haworth is also available)",w:"The friendliest first textbook: thermochemistry, kinetics, flames and practical devices, with worked examples."},
+ 1:{t:"Combustion, Flames and Explosions of Gases",a:"Bernard Lewis and Guenther von Elbe",p:"Academic Press, 3rd edition, 1987",w:"A classic by the chair of this symposium. Hydrogen–oxygen and hydrocarbon chemistry, flame propagation and detonation, told by pioneers."},
+ 3:{t:"Combustion",a:"Irvin Glassman, Richard A. Yetter and Nick G. Glumac",p:"Academic Press, 5th edition, 2014",w:"From flame temperatures to detonation, ignition and environmental combustion, with a Princeton flavour throughout."},
+ 5:{t:"Combustion Physics",a:"Chung K. Law",p:"Cambridge University Press, 2006",w:"A rigorous, unified treatment of chemical kinetics, transport and flame theory, written by a former president of The Combustion Institute."},
+ 11:{t:"The Mathematical Theory of Combustion and Explosions",a:"Ya. B. Zeldovich, G. I. Barenblatt, V. B. Librovich and G. M. Makhviladze",p:"Consultants Bureau (Plenum), New York, 1985",w:"The Russian school's grand synthesis: thermal explosion, flame propagation and stability, from the scientist whose name the Zeldovich Gold Medal carries."},
+ 14:{t:"Combustion Theory: The Fundamental Theory of Chemically Reacting Flow Systems",a:"Forman A. Williams",p:"Benjamin/Cummings, 2nd edition, 1985",w:"The theorist's bible: conservation equations, diffusion flames, premixed flames, detonations, ignition and sprays, derived with care."},
+ 17:{t:"Fluid Dynamics and Transport of Droplets and Sprays",a:"William A. Sirignano",p:"Cambridge University Press, 2nd edition, 2010",w:"From a single vaporizing droplet to whole sprays: heating, convection, multicomponent liquids and supercritical behaviour."},
+ 23:{t:"Turbulent Combustion",a:"Norbert Peters",p:"Cambridge University Press, 2000",w:"The flamelet view of turbulent flames, premixed and non-premixed, by one of its architects."},
+ 26:{t:"Theoretical and Numerical Combustion",a:"Thierry Poinsot and Denis Veynante",p:"R. T. Edwards, 2nd edition, 2005",w:"How to put flames on a computer: governing equations, DNS and LES, flame–wall and flame–acoustic interactions."},
+ 35:{t:"The Detonation Phenomenon",a:"John H. S. Lee",p:"Cambridge University Press, 2008",w:"Detonation explained through experiments and physical insight: CJ and ZND theory, cellular structure, initiation and transition."},
+ 8:{t:"Combustion: Physical and Chemical Fundamentals, Modeling and Simulation, Experiments, Pollutant Formation",a:"Jürgen Warnatz, Ulrich Maas and Robert W. Dibble",p:"Springer, 4th edition, 2006",w:"Detailed kinetics and reaction mechanisms meet simulation and pollutant formation; a bridge from chemistry to modelling."}};
+const eraOf=i=>ERAS.findIndex(e=>i>=e.from&&i<=e.to);
+const LAST=41; /* all 42 symposia are playable */
+const KNOTES=["Chain reactions: one radical can make two. H + O₂ → OH + O is the branching step that lets hydrogen flames run away.","Atmospheric methane is removed mainly by reaction with OH radicals, which sets its lifetime of about a decade.","Faster chemistry is not always cleaner: thermal NO forms through high-activation-energy steps that grow steeply with temperature.","In the atmosphere, NOx and hydrocarbons react in sunlight to make ground-level ozone, a pollutant and a greenhouse gas.","Better kinetic models let engineers design low-emission burners on a computer before building them.","Mechanism generators such as RMG build thousands of reactions automatically, a key tool for designing carbon-free fuels."];
+SYMP.forEach((S,i)=>{if(i>=5&&i<=10)S.note=KNOTES[i-5]});
+const ENOTES=[[],[],
+ ["Lean premixed flames burn cooler, which cuts thermal NO. That is how modern gas turbines meet low-NOx limits.","Hydrogen flames are fast. Adding hydrogen to natural gas burners raises the risk of flashback, so burners must be redesigned.","Ammonia burns slowly and is hard to ignite, so it is often blended with hydrogen.","Flammability limits matter for safety: methane burns in air between about 5% and 15% by volume."],
+ ["Sustainable aviation fuels are liquid drop-in fuels: they are sprayed and burned in jet engines just like kerosene.","Smaller droplets evaporate faster: a droplet's lifetime scales with the square of its initial diameter.","Well-atomized sprays burn more completely and emit less soot.","Biofuels such as ethanol are often blended into gasoline; E10 means 10% ethanol."],
+ ["Almost every practical flame is turbulent: in engines, gas turbines, furnaces and wildfires.","Swirl creates a recirculation zone that anchors flames in gas turbines and burners.","Combustion instabilities, the coupling of sound and heat release, are a key challenge for hydrogen gas turbines.","Laser diagnostics such as OH-PLIF let researchers see the flame front inside a turbulent flow."],
+ ["Fine particles below 2.5 micrometres (PM2.5) reach deep into the lungs, and combustion is a major source.","Three-way catalysts clean gasoline exhaust; diesel engines use particle filters and urea-based SCR for NOx.","Black carbon (soot) warms the climate by absorbing sunlight.","Ammonia flames must keep both NOx and N₂O low, since N₂O is a strong greenhouse gas."],
+ ["Detonation-based engines promise pressure gain combustion and higher efficiency.","Hydrogen–oxygen rocket engines have a high specific impulse, and their exhaust is water vapour.","Aviation also warms the climate through contrails and NOx, not only through CO₂."],
+ ["Ammonia stores about 17.8% hydrogen by mass and is easy to liquefy, which makes it a candidate hydrogen carrier.","E-fuels are made from green hydrogen and captured CO₂, so their carbon circulates instead of accumulating.","Net zero means that any remaining emissions are balanced by removals from the atmosphere."]];
+const SHORT=["","","Flame Speed","Droplet","Eddy","Clean Air","Detonation","Energy Transition"],ROM=["I","II","III","IV","V","VI"];
+SYMP.forEach((S,i)=>{const E=eraOf(i);if(E>=2){S.note=ENOTES[E][(i-ERAS[E].from)%ENOTES[E].length];S.badge=SHORT[E]+' '+ROM[i-ERAS[E].from]}});
+const CHASE=[{sp:1.0,lab:"CH₄/air, φ = 1.0 · S_L ≈ 38 cm/s"},{sp:0.85,lab:"CH₄/air, φ = 0.8 · S_L ≈ 27 cm/s"},{sp:0.75,lab:"CH₄/air at 5 atm · S_L ≈ 19 cm/s"},{sp:0.6,lab:"NH₃/air · S_L below 10 cm/s"},{sp:1.3,lab:"CH₄/air preheated to 600 K · S_L ≈ 1.3 m/s"},{sp:1.55,lab:"H₂/air, φ = 1.0 · S_L ≈ 2.3 m/s"}];
+
+/* ---------- question bank ----------
+   a: options, first is correct; e: explanation; d: 1 undergraduate, 2 graduate; t: c concept, n numerical, k climate */
+const BANK=[
+{d:1,t:"c",q:"What does the equivalence ratio φ compare?",a:["The actual fuel–air ratio divided by the stoichiometric fuel–air ratio","Fuel mass divided by total mixture mass","The oxygen mole fraction of the mixture divided by 0.21","Burnt gas temperature divided by unburnt gas temperature"],e:"φ = (F/A)actual / (F/A)stoich. φ < 1 is lean, φ = 1 stoichiometric, φ > 1 rich."},
+{d:1,t:"c",q:"A mixture with φ = 0.7 is…",a:["Fuel-lean, with excess air","Fuel-rich","Exactly stoichiometric","Pure fuel"],e:"φ below 1 means less fuel than the stoichiometric amount, so oxygen is left over in the products."},
+{d:1,t:"n",q:"In the standard air model, how many moles of N₂ accompany each mole of O₂?",a:["3.76","4.76","0.79","1.00"],e:"Air ≈ 21% O₂ and 79% N₂ by mole, so 79/21 = 3.76 mol N₂ per mol O₂. One 'mole of O₂ in air' therefore means 4.76 mol of air."},
+{d:1,t:"n",q:"How many moles of air does 1 mol of CH₄ need for stoichiometric combustion?",a:["9.52","2.00","4.76","7.14"],e:"CH₄ + 2(O₂ + 3.76N₂) → CO₂ + 2H₂O + 7.52N₂. Air = 2 × 4.76 = 9.52 mol."},
+{d:1,t:"n",q:"The stoichiometric air–fuel mass ratio of methane is about…",a:["17.1","34.1","6.0","9.5"],e:"2 × 4.76 mol air × 28.85 g/mol ÷ 16.04 g/mol CH₄ ≈ 17.1 kg air per kg fuel."},
+{d:1,t:"n",q:"The stoichiometric air–fuel mass ratio of hydrogen is about…",a:["34","17","8","2.4"],e:"0.5 × 4.76 mol air × 28.85 g/mol ÷ 2.016 g/mol H₂ ≈ 34. Hydrogen is very light, so each kilogram needs a lot of air."},
+{d:1,t:"n",q:"The stoichiometric air–fuel mass ratio of ammonia is about…",a:["6.0","17.1","15.0","34"],e:"NH₃ + 0.75(O₂ + 3.76N₂) → 1.5H₂O + 3.32N₂. 0.75 × 4.76 × 28.85 ÷ 17.03 ≈ 6.0."},
+{d:1,t:"n",q:"How many moles of O₂ does 1 mol of propane (C₃H₈) need for complete combustion?",a:["5","3","4","6.5"],e:"For CxHy, O₂ needed = x + y/4 = 3 + 8/4 = 5."},
+{d:1,t:"n",q:"In a stoichiometric H₂/air mixture, the H₂ mole fraction is about…",a:["29.6%","9.5%","50%","21%"],e:"1 mol H₂ with 0.5 × 4.76 = 2.38 mol air: 1/3.38 ≈ 0.296."},
+{d:1,t:"n",q:"In a stoichiometric CH₄/air mixture, the CH₄ mole fraction is about…",a:["9.5%","29.6%","33%","4.8%"],e:"1 mol CH₄ with 9.52 mol air: 1/10.52 ≈ 0.095."},
+{d:1,t:"n",q:"An engine runs at excess-air ratio λ = 1.25. Its equivalence ratio φ is…",a:["0.80","1.25","0.25","1.00"],e:"λ = 1/φ, so φ = 1/1.25 = 0.80 (lean)."},
+{d:1,t:"n",q:"A burner runs with 15% excess air. Its equivalence ratio is about…",a:["0.87","1.15","0.15","1.00"],e:"Air is 1.15 × stoichiometric, so φ = 1/1.15 ≈ 0.87."},
+{d:1,t:"n",q:"1 mol of CH₄ is mixed with 12 mol of air. φ is about…",a:["0.79","1.26","0.50","1.00"],e:"Stoichiometric air is 9.52 mol, so φ = 9.52/12 ≈ 0.79."},
+{d:1,t:"c",q:"Ideal complete-combustion products of lean CH₄/air are…",a:["CO₂, H₂O, O₂ and N₂","CO₂, H₂O, CO and H₂","CO₂ and H₂O only","CO, H₂ and N₂"],e:"Lean means excess oxygen, which stays in the products together with the nitrogen from air."},
+{d:1,t:"c",q:"Which species appear in rich hydrocarbon/air products but not in ideal lean products?",a:["CO and H₂","O₂ and N₂","Ar and He","O₃ and H₂O₂"],e:"Without enough oxygen, carbon and hydrogen are only partly oxidized and leave as CO and H₂."},
+{d:1,t:"c",q:"Ideal complete combustion of ammonia in air produces…",a:["N₂ and H₂O","CO₂ and H₂O","NO₂ only","H₂ and N₂"],e:"4NH₃ + 3O₂ → 2N₂ + 6H₂O. Real flames also make some NO and N₂O, which is a key research problem for ammonia."},
+{d:1,t:"c",q:"The standard enthalpy of formation of O₂(g) at 298 K is…",a:["Zero, by definition","Equal to its heating value","Negative, like CO₂","Positive, like atomic O"],e:"Elements in their reference state (O₂ gas, N₂ gas, graphite, H₂ gas) have zero enthalpy of formation by definition."},
+{d:1,t:"n",q:"The standard enthalpy of formation of water vapour, H₂O(g), is about…",a:["−241.8 kJ/mol","−285.8 kJ/mol","0 kJ/mol","−393.5 kJ/mol"],e:"−241.8 kJ/mol for vapour. −285.8 kJ/mol is liquid water; the difference is the latent heat."},
+{d:1,t:"n",q:"The standard enthalpy of formation of CO₂(g) is about…",a:["−393.5 kJ/mol","−110.5 kJ/mol","−241.8 kJ/mol","+393.5 kJ/mol"],e:"−393.5 kJ/mol. −110.5 kJ/mol belongs to CO, which is why burning CO to CO₂ still releases a lot of heat."},
+{d:1,t:"c",q:"The difference between the higher and lower heating value comes from…",a:["Condensing the water in the products","Dissociation of CO₂","Heat lost through walls","Nitrogen in the air"],e:"HHV assumes product water is liquid, so it includes the latent heat of condensation; LHV assumes water vapour."},
+{d:1,t:"n",q:"The lower heating value of methane is about…",a:["802 kJ/mol","890 kJ/mol","393 kJ/mol","242 kJ/mol"],e:"CH₄ + 2O₂ → CO₂ + 2H₂O(g): −74.6 −(−393.5 − 2 × 241.8) ≈ 802 kJ/mol. 890 kJ/mol is the higher heating value."},
+{d:1,t:"c",q:"Which fuel has the highest lower heating value per kilogram?",a:["Hydrogen","Methane","Gasoline","Ammonia"],e:"About 120 MJ/kg for H₂, against about 50 for CH₄, about 44 for gasoline and about 18.6 for NH₃."},
+{d:1,t:"n",q:"The lower heating value of ammonia is about…",a:["18.6 MJ/kg","50 MJ/kg","120 MJ/kg","44 MJ/kg"],e:"About 18.6 MJ/kg. Low per kilogram, but ammonia is easy to liquefy and store, which is why it is studied as a hydrogen carrier."},
+{d:1,t:"c",q:"The constant-pressure adiabatic flame temperature is found by conserving…",a:["Total enthalpy of reactants and products","Internal energy","Entropy","Gibbs free energy"],e:"No heat loss and no work except pressure work: H(reactants at T₀) = H(products at T_ad)."},
+{d:1,t:"n",q:"Stoichiometric CH₄/air at 300 K and 1 atm: the equilibrium adiabatic flame temperature is closest to…",a:["2225 K","1800 K","2600 K","3050 K"],e:"Cantera equilibrium (GRI-Mech 3.0) gives about 2225 K."},
+{d:1,t:"n",q:"Stoichiometric H₂/air at 300 K and 1 atm: the equilibrium adiabatic flame temperature is closest to…",a:["2380 K","2225 K","2070 K","3000 K"],e:"Cantera equilibrium gives about 2381 K, hotter than methane/air."},
+{d:1,t:"n",q:"Stoichiometric NH₃/air at 300 K and 1 atm: the equilibrium adiabatic flame temperature is closest to…",a:["2070 K","2380 K","2600 K","1600 K"],e:"Cantera equilibrium gives about 2073 K, cooler than CH₄ and H₂ flames."},
+{d:1,t:"c",q:"Preheating the reactants makes the adiabatic flame temperature…",a:["Rise, but by less than the preheat","Rise by exactly the preheat","Stay the same","Fall"],e:"For stoichiometric CH₄/air, 300 → 600 K preheat raises T_ad from about 2225 to 2367 K. The products have a higher heat capacity and dissociate more."},
+{d:1,t:"n",q:"Burning CH₄ in pure oxygen instead of air raises the adiabatic flame temperature to about…",a:["3050 K","2400 K","5000 K","2225 K"],e:"No nitrogen to heat up: about 3052 K at equilibrium. Dissociation stops it from going much higher."},
+{d:1,t:"c",q:"For hydrocarbon/air flames, the maximum adiabatic flame temperature is usually found…",a:["Slightly rich, near φ ≈ 1.05","Exactly at φ = 1","Near φ = 0.5","Near φ = 2"],e:"For CH₄/air, equilibrium gives 2225 K at φ = 1.00 and 2232 K at φ = 1.05."},
+{d:1,t:"n",q:"Lean H₂/air at φ = 0.5 (300 K, 1 atm): the adiabatic flame temperature is closest to…",a:["1640 K","2380 K","1200 K","2000 K"],e:"Cantera equilibrium gives about 1643 K. Lean hydrogen burns much cooler, which is why it is attractive for low NOx."},
+{d:1,t:"c",q:"Which species has the largest mole fraction in the products of stoichiometric CH₄/air?",a:["N₂","H₂O","CO₂","O₂"],e:"7.52 mol N₂ against 2 mol H₂O and 1 mol CO₂: nitrogen is about 71% of the products."},
+{d:1,t:"n",q:"In ideal complete combustion of stoichiometric CH₄/air, the water mole fraction is about…",a:["19%","9.5%","33%","50%"],e:"2 mol H₂O out of 1 + 2 + 7.52 = 10.52 mol: about 0.19."},
+{d:1,t:"c",q:"Hess's law says that…",a:["The enthalpy change of a reaction does not depend on the path","Reaction rates double every 10 K","Pressure times volume is constant","Heat flows from hot to cold"],e:"Because enthalpy is a state function, heats of reaction can be built from enthalpies of formation."},
+{d:1,t:"c",q:"Most thermochemical tables give standard enthalpies at…",a:["298.15 K and 1 bar (or 1 atm)","0 K and vacuum","273 K and 10 bar","1000 K and 1 atm"],e:"The standard reference state is 298.15 K; older tables use 1 atm, newer ones 1 bar."},
+{d:1,t:"n",q:"The ratio of specific heats γ = cp/cv of air near room temperature is about…",a:["1.40","1.67","1.00","1.30"],e:"About 1.40 for diatomic air. 1.67 is a monatomic gas such as argon."},
+{d:1,t:"k",q:"Why is ammonia called a carbon-free fuel?",a:["It has no carbon atoms, so it emits no CO₂ where it burns","It burns without forming any NOx","Its heating value is zero","It can only be made from renewable power"],e:"No carbon in the molecule means no CO₂ at the point of use. NOx and N₂O are still a challenge, and most ammonia today is made from fossil hydrogen."},
+{d:1,t:"k",q:"Burning 1 kg of methane completely releases about how much CO₂?",a:["2.75 kg","1 kg","0.36 kg","16 kg"],e:"CH₄ (16 g/mol) gives one CO₂ (44 g/mol): 44/16 ≈ 2.75 kg CO₂ per kg CH₄. The oxygen comes from the air."},
+{d:1,t:"k",q:"Burning 1 kg of pure carbon releases about how much CO₂?",a:["3.67 kg","1 kg","2.75 kg","12 kg"],e:"12 g of carbon becomes 44 g of CO₂: 44/12 ≈ 3.67."},
+{d:1,t:"k",q:"Per unit of energy released, natural gas emits less CO₂ than gasoline because…",a:["Methane has a higher hydrogen-to-carbon ratio","Methane burns at a lower temperature","Natural gas contains nitrogen","Gasoline has no hydrogen"],e:"More of methane's energy comes from forming water instead of CO₂: about 55 g CO₂/MJ for CH₄ against roughly 70 g/MJ for gasoline-like fuels."},
+{d:1,t:"k",q:"Over 100 years, one tonne of fossil methane warms the climate about as much as…",a:["About 30 tonnes of CO₂","1 tonne of CO₂","0.3 tonnes of CO₂","300 tonnes of CO₂"],e:"IPCC AR6 gives a 100-year global warming potential of 29.8 for fossil methane and 27 for non-fossil methane. That is why methane leaks matter so much."},
+{d:1,t:"k",q:"Which combustion by-product has a 100-year global warming potential of about 273?",a:["N₂O (nitrous oxide)","CO (carbon monoxide)","H₂O (water vapour)","NO (nitric oxide)"],e:"IPCC AR6: N₂O has a GWP100 of 273 and lasts about a century. Ammonia flames must keep N₂O very low to be truly climate friendly."},
+{d:1,t:"k",q:"A carbon footprint is usually expressed as…",a:["Total greenhouse gas emissions in CO₂-equivalent","Kilograms of soot only","The carbon content of the fuel","The area of forest needed"],e:"All greenhouse gases are converted to CO₂-equivalent using their global warming potentials and then added up."},
+{d:1,t:"k",q:"'Green' hydrogen is hydrogen made…",a:["By water electrolysis with renewable electricity","From natural gas without carbon capture","From natural gas with carbon capture","From coal gasification"],e:"Grey hydrogen comes from natural gas reforming without capture; blue hydrogen adds carbon capture and storage."},
+{d:1,t:"k",q:"Ammonia is made industrially by…",a:["The Haber–Bosch process from N₂ and H₂","Burning hydrogen in air","Electrolysis of nitric acid","Distilling natural gas"],e:"N₂ + 3H₂ → 2NH₃ over an iron catalyst at high pressure. The hydrogen decides how clean the ammonia is."},
+{d:1,t:"k",q:"The Paris Agreement aims to hold global warming to…",a:["Well below 2 °C, pursuing 1.5 °C, above pre-industrial levels","Exactly 3 °C","0 °C by 2030","Well below 5 °C"],e:"Adopted in 2015, it sets a goal of well below 2 °C with efforts to limit warming to 1.5 °C."},
+{d:1,t:"k",q:"CCS in climate technology stands for…",a:["Carbon capture and storage","Combined cycle steam","Catalytic combustion system","Carbon credit scheme"],e:"CO₂ is captured from a flue gas or the air and stored underground so it does not reach the atmosphere."},
+{d:1,t:"k",q:"A life-cycle assessment (LCA) of a fuel counts emissions…",a:["From production to final use, not only at the burner","Only at the exhaust pipe","Only during fuel transport","Only from carbon in the fuel"],e:"A fuel can look clean at the flame and still carry a large footprint from how it was made, which is why LCA matters for hydrogen and ammonia."},
+{d:2,t:"c",q:"Why is the equilibrium adiabatic flame temperature lower than the complete-combustion value?",a:["Endothermic dissociation of CO₂ and H₂O into CO, H₂, OH, O and H","Radiation from the flame","Imperfect fuel–air mixing","Soot formation"],e:"At high temperature products dissociate, absorbing part of the heat release. The calculation is still adiabatic."},
+{d:2,t:"n",q:"Raising pressure from 1 to 10 atm changes the T_ad of stoichiometric CH₄/air from 2225 K to about…",a:["2268 K, because dissociation is suppressed","2100 K, because pressure cools the flame","2225 K, pressure has no effect","4450 K"],e:"Dissociation increases the number of moles, so higher pressure pushes equilibrium back toward CO₂ and H₂O (Le Chatelier)."},
+{d:2,t:"c",q:"Adiabatic combustion at constant volume instead of constant pressure gives…",a:["A higher temperature, because no expansion work is done","A lower temperature","The same temperature","A temperature that depends only on the fuel"],e:"Internal energy is conserved instead of enthalpy. For stoichiometric CH₄/air, about 2586 K against 2225 K."},
+{d:2,t:"n",q:"Replace the N₂ in air by argon (same O₂ fraction). The T_ad of stoichiometric CH₄ becomes about…",a:["2520 K, because argon has a lower heat capacity","2000 K, because argon is heavier","2225 K, the diluent does not matter","3500 K"],e:"Monatomic argon has cp = (5/2)R against about (7/2)R for N₂, so less heat is spent warming the diluent."},
+{d:2,t:"n",q:"Replace the N₂ in air by CO₂ (O₂:CO₂ = 1:3.76). The T_ad of stoichiometric CH₄ becomes about…",a:["1780 K","2225 K","2520 K","3050 K"],e:"CO₂ has a much higher heat capacity than N₂, about 37 against 29 J/(mol·K) at 298 K. This is the idea behind CO₂-diluted oxy-fuel combustion, which makes carbon capture easier."},
+{d:2,t:"c",q:"For an ideal-gas reaction, the equilibrium constant Kp depends on…",a:["Temperature only","Pressure only","Both temperature and pressure","The total number of moles"],e:"Kp = exp(−ΔG°/RT) depends only on T. Pressure changes the composition, not Kp."},
+{d:2,t:"c",q:"At constant temperature and pressure, chemical equilibrium corresponds to…",a:["Minimum Gibbs free energy","Maximum enthalpy","Minimum entropy","Maximum internal energy"],e:"Equilibrium solvers such as Cantera minimize G at fixed T and P, subject to element conservation."},
+{d:2,t:"c",q:"Raising the pressure on CO₂ ⇌ CO + ½O₂ shifts the equilibrium…",a:["Toward CO₂, the side with fewer moles","Toward CO and O₂","Nowhere","Toward atomic O"],e:"1 mol on the left against 1.5 mol on the right: higher pressure favours the left side."},
+{d:2,t:"c",q:"The constant-pressure heat capacity of a monatomic ideal gas is…",a:["(5/2)R","(3/2)R","(7/2)R","4R"],e:"Three translational degrees of freedom give cv = (3/2)R and cp = cv + R = (5/2)R."},
+{d:2,t:"c",q:"In non-premixed combustion, the mixture fraction Z is…",a:["A conserved scalar giving the mass fraction that came from the fuel stream","The normalized flame temperature","A reaction progress variable","The ratio of fuel to oxygen moles"],e:"Z is 1 in the fuel stream and 0 in the oxidizer stream, and it is not created or destroyed by reaction."},
+{d:2,t:"n",q:"The stoichiometric mixture fraction of a pure CH₄ jet in air is about…",a:["0.055","0.50","0.0095","0.17"],e:"Z_st = 1/(1 + (A/F)_st) = 1/(1 + 17.1) ≈ 0.055. The flame sits far out on the air side."},
+{d:2,t:"n",q:"The stoichiometric mixture fraction of a pure H₂ jet in air is about…",a:["0.028","0.296","0.50","0.055"],e:"Z_st = 1/(1 + 34.1) ≈ 0.028."},
+{d:2,t:"c",q:"Why does the maximum T_ad of hydrocarbon/air flames sit slightly on the rich side?",a:["Slightly rich products dissociate less and have a lower heat capacity","Rich mixtures release more heat per mole of fuel","Nitrogen reacts on the rich side","Rich flames radiate less"],e:"Products with some CO and H₂ instead of CO₂ and H₂O have a lower heat capacity, so the temperature peaks just past φ = 1."},
+{d:2,t:"c",q:"In the equilibrium products of stoichiometric H₂/air (about 2380 K), the most abundant radical is…",a:["OH","H","O","HO₂"],e:"Cantera equilibrium gives about 0.68% OH, against 0.18% H and 0.05% O."},
+{d:2,t:"k",q:"Thermal (Zeldovich) NO formation is mostly controlled by…",a:["High temperature and oxygen availability","Low flame temperature","The absence of nitrogen","Very rich mixtures only"],e:"The rate-limiting O + N₂ → NO + N step has a high activation energy, so thermal NO rises steeply above about 1800 K. Lean, cooler flames cut it."},
+{e2:1,d:1,t:"c",q:"The Arrhenius expression for a rate constant is…",a:["k = A exp(−Eₐ/RT)","k = A exp(+Eₐ/RT)","k = A · Eₐ · T","k = Eₐ/(RT)"],e:"A is the pre-exponential factor and Eₐ the activation energy. With a positive Eₐ, k grows steeply with temperature."},
+{e2:1,d:1,t:"n",q:"With Eₐ = 100 kJ/mol, raising the temperature from 1000 K to 1100 K multiplies k by about…",a:["3","1.1","10","100"],e:"exp[(Eₐ/R)(1/1000 − 1/1100)] = exp(1.09) ≈ 2.98. A 10% temperature rise triples the rate."},
+{e2:1,d:1,t:"n",q:"With Eₐ = 200 kJ/mol, the same rise from 1000 K to 1100 K multiplies k by about…",a:["9","3","1.2","200"],e:"exp(2 × 1.09) ≈ 8.9. Higher activation energy means stronger temperature sensitivity."},
+{e2:1,d:1,t:"c",q:"Which elementary reaction is the main chain-branching step in hydrogen and high-temperature hydrocarbon combustion?",a:["H + O₂ → OH + O","OH + H₂ → H₂O + H","H + O₂ + M → HO₂ + M","CO + OH → CO₂ + H"],e:"One radical (H) makes two (OH and O). Its competition with H + O₂ + M → HO₂ + M controls explosion limits and flame speeds."},
+{e2:1,d:1,t:"c",q:"In H + O₂ + M → HO₂ + M, the symbol M stands for…",a:["Any third-body molecule that carries away energy","A metal catalyst","Methane","A free electron"],e:"The collision partner M stabilizes HO₂ by removing excess energy. Different molecules have different third-body efficiencies; H₂O is a very effective one."},
+{e2:1,d:1,t:"c",q:"Under typical flame conditions, H + O₂ + M → HO₂ + M acts as a…",a:["Chain-terminating (or propagation-slowing) step","Chain-branching step","Initiation step","Ionization step"],e:"It replaces a reactive H atom with the less reactive HO₂, slowing the chain, especially at high pressure."},
+{e2:1,d:1,t:"c",q:"The hydrogen–oxygen mixture is famous for having…",a:["Three explosion limits that form a Z-shaped curve in pressure–temperature space","One sharp ignition temperature","No ignition at any pressure","Explosion only below 1 K"],e:"The first, second and third limits come from wall termination, gas-phase termination by H + O₂ + M, and HO₂/H₂O₂ chemistry."},
+{e2:1,d:1,t:"c",q:"Generally, raising the initial temperature makes the ignition delay time…",a:["Shorter","Longer","Unchanged","Negative"],e:"Faster chemistry at higher temperature. Many hydrocarbons show an exception in a middle range, the negative temperature coefficient region."},
+{e2:1,d:1,t:"n",q:"For stoichiometric H₂/air at 10 atm, going from 1000 K to 1200 K shortens the ignition delay by a factor of about…",a:["More than 100","2","10","It gets longer"],e:"Cantera with GRI-Mech 3.0 gives about 8 ms at 1000 K and 62 µs at 1200 K. The mixture crosses the second explosion limit in between."},
+{e2:1,d:1,t:"c",q:"NTC stands for…",a:["Negative temperature coefficient","Nitrogen transfer chemistry","Normal thermal conduction","Non-thermal combustion"],e:"In the NTC region (roughly 700–900 K for many alkanes) ignition delay grows as temperature rises, because low-temperature chain branching switches off."},
+{e2:1,d:1,t:"c",q:"Which laboratory devices are typically used to measure ignition delay times?",a:["Shock tubes and rapid compression machines","Bomb calorimeters","Bunsen burners","Spectrophotometers alone"],e:"Shock tubes reach high temperatures in microseconds; rapid compression machines cover the lower-temperature, longer-delay range."},
+{e2:1,d:1,t:"n",q:"How many species and reactions does the GRI-Mech 3.0 natural gas mechanism contain?",a:["53 species and 325 reactions","10 species and 20 reactions","500 species and 5000 reactions","1 species and 1 reaction"],e:"Checked directly in Cantera: 53 species and 325 reactions, including nitrogen chemistry."},
+{e2:1,d:1,t:"c",q:"RMG, used to build kinetic models automatically, stands for…",a:["Reaction Mechanism Generator","Rapid Mixing Gauge","Radical Mass Graph","Reduced Model Generator"],e:"RMG is open-source software from MIT that generates detailed mechanisms from rules and thermochemistry."},
+{e2:1,d:1,t:"c",q:"A sensitivity analysis of a kinetic mechanism tells you…",a:["Which reactions most control a predicted quantity, such as ignition delay","The exact flame shape","The price of the fuel","Which species are toxic"],e:"Normalized sensitivity coefficients rank reactions by how much a small change in their rate constant changes the output."},
+{e2:1,d:1,t:"c",q:"Combustion kinetics equations are called stiff because…",a:["Their time scales span many orders of magnitude, so implicit solvers are needed","They have no solution","They contain only one species","They are linear"],e:"Radicals react in nanoseconds while slow species evolve over milliseconds; explicit solvers would need impossibly small time steps."},
+{e2:1,d:1,t:"c",q:"The quasi-steady-state approximation assumes that…",a:["Some reactive intermediates are formed and consumed so fast that their net rate is about zero","All species are at equilibrium","Temperature is constant","Reactions are irreversible"],e:"It turns differential equations for fast radicals into algebraic ones and is a classic route to reduced mechanisms."},
+{e2:1,d:1,t:"c",q:"In hydrocarbon flames, CO is converted to CO₂ mainly by…",a:["CO + OH → CO₂ + H","CO + O₂ → CO₂ + O","CO + N₂ → CO₂ + N","CO + H₂O → CO₂ + H₂ only"],e:"CO + OH is fast and slightly exothermic, and much of the heat release from CO oxidation comes through it."},
+{e2:1,d:1,t:"n",q:"A first-order reaction has k = 10 s⁻¹. Its half-life is about…",a:["0.069 s","0.1 s","10 s","6.9 s"],e:"t½ = ln 2 / k = 0.693/10 ≈ 0.069 s."},
+{e2:1,d:1,t:"k",q:"The main removal process for methane in the atmosphere is…",a:["Reaction with OH radicals","Dissolving in rain","Photosynthesis","Freezing at the poles"],e:"CH₄ + OH → CH₃ + H₂O starts methane's atmospheric oxidation and sets its lifetime of about a decade, short compared with CO₂."},
+{e2:1,d:1,t:"k",q:"Ground-level ozone forms when…",a:["NOx and hydrocarbons react in sunlight","CO₂ meets water vapour","Methane freezes","Soot absorbs heat"],e:"Photochemical smog chemistry; combustion emissions supply both NOx and unburned hydrocarbons."},
+{e2:1,d:1,t:"k",q:"Thermal NO is very temperature sensitive because…",a:["Its first step, O + N₂ → NO + N, has a very high activation energy","Nitrogen melts at flame temperatures","NO is a stable product at room temperature","It depends only on fuel nitrogen"],e:"Breaking the N≡N triple bond is hard. Keeping peak temperatures lower, for example with lean premixed flames, cuts NO strongly."},
+{e2:2,d:2,t:"c",q:"For an elementary reaction, forward and reverse rate constants are linked by…",a:["kf/kr = Kc, the equilibrium constant in concentration units","kf = kr always","kf + kr = 1","kf/kr = T"],e:"Detailed balance (microscopic reversibility) means reverse rates in mechanisms are usually computed from forward rates and thermochemistry."},
+{e2:2,d:2,t:"c",q:"The Lindemann mechanism explains…",a:["The pressure dependence (fall-off) of unimolecular reaction rates","The color of flames","Soot oxidation","Laminar flame thickness"],e:"Molecules are energized by collisions before reacting, so at low pressure the rate becomes second order and at high pressure first order."},
+{e2:2,d:2,t:"c",q:"The second explosion limit of H₂/O₂ comes from the competition between…",a:["H + O₂ → OH + O and H + O₂ + M → HO₂ + M","Wall termination and diffusion","CO oxidation and soot","Radiation and convection"],e:"Higher pressure favours the three-body step, so above the second limit the branching chain is suppressed."},
+{e2:2,d:2,t:"c",q:"Low-temperature chain branching in alkanes, behind cool flames and NTC, runs through…",a:["Alkylperoxy (RO₂) and hydroperoxyalkyl (QOOH) radicals","Atomic nitrogen","Soot particles","Ions in the flame"],e:"RO₂ isomerizes to QOOH, which adds a second O₂ and decomposes into several radicals. At higher temperatures RO₂ falls apart instead, which causes NTC."},
+{e2:2,d:2,t:"c",q:"The directed relation graph (DRG) method is used to…",a:["Remove unimportant species from a detailed mechanism","Measure flame speed","Compute adiabatic flame temperature","Model radiation"],e:"DRG keeps species strongly coupled to chosen targets and drops the rest, producing a skeletal mechanism."},
+{e2:2,d:2,t:"c",q:"Prompt (Fenimore) NO starts mainly with…",a:["CH + N₂ → HCN + N","O + N₂ → NO + N","N₂O + O → 2NO","NH₃ + O₂"],e:"Hydrocarbon radicals attack N₂ inside the flame front, so prompt NO matters in rich and low-temperature hydrocarbon flames. Modern work often writes the product as NCN + H."},
+{e2:2,d:2,t:"c",q:"Third-body efficiencies in mechanisms are usually highest for…",a:["H₂O and CO₂","Ar and He","N₂ only","H atoms"],e:"Polyatomic molecules absorb collision energy well. In GRI-Mech 3.0, H₂O often carries an efficiency of about 6 relative to N₂."},
+{er:3,d:1,t:"c",q:"The laminar burning velocity is…",a:["The speed of a flat flame front relative to the unburnt gas, normal to the front","The speed of the burnt gas leaving the flame","The speed of sound in the flame","The velocity of the fuel jet"],e:"It is a property of the mixture (fuel, φ, temperature, pressure), not of the burner."},
+{er:3,d:1,t:"n",q:"The laminar burning velocity of stoichiometric CH₄/air at 300 K and 1 atm is about…",a:["38 cm/s","3.8 m/s","3.8 cm/s","38 m/s"],e:"Cantera with GRI-Mech 3.0 gives 38.1 cm/s; experiments give about 36–38 cm/s."},
+{er:3,d:1,t:"c",q:"Compared with methane/air, stoichiometric hydrogen/air flames are…",a:["Several times faster","About ten times slower","Exactly as fast","Unable to propagate"],e:"About 2.3 m/s with GRI-Mech 3.0, roughly six times faster than methane, because of hydrogen's high diffusivity and fast chemistry."},
+{er:3,d:1,t:"c",q:"Ammonia/air flames are known for…",a:["Very low burning velocity, below 10 cm/s","Burning faster than hydrogen","Producing soot","Detonating spontaneously"],e:"Slow flames and a narrow stability range are why ammonia is often blended with hydrogen or partly cracked."},
+{er:3,d:1,t:"n",q:"Raising the pressure of stoichiometric CH₄/air from 1 to 5 atm changes S_L from about 38 cm/s to…",a:["About 19 cm/s","About 76 cm/s","Still 38 cm/s","About 190 cm/s"],e:"Cantera gives 19.1 cm/s. For methane, S_L falls with pressure because three-body recombination speeds up."},
+{er:3,d:1,t:"c",q:"Preheating the unburnt mixture makes the laminar burning velocity…",a:["Increase strongly","Decrease","Stay the same","Become zero"],e:"Higher flame temperature means faster chemistry; preheating stoichiometric CH₄/air to 600 K raises S_L to about 1.3 m/s with GRI-Mech."},
+{er:3,d:1,t:"c",q:"The Lewis number is…",a:["Thermal diffusivity divided by mass diffusivity","Inertia divided by viscosity","Flow time divided by chemical time","Flame speed divided by sound speed"],e:"Le < 1, as in lean hydrogen flames, makes fronts thermodiffusively unstable and cellular."},
+{er:3,d:1,t:"c",q:"In the classical analysis, the laminar flame speed scales with…",a:["The square root of thermal diffusivity times reaction rate","The flame temperature squared","The burner diameter","The fuel price"],e:"S_L ~ √(α·ω): a flame is a balance of heat diffusion and chemistry, the Zeldovich–Frank-Kamenetskii picture."},
+{er:3,d:1,t:"c",q:"A Davy safety lamp and a flame arrester work because…",a:["Flames cannot pass through gaps smaller than the quenching distance","Metal is fireproof","They remove oxygen","They cool the fuel tank"],e:"Heat loss to narrow walls quenches the flame; Davy's wire gauze lamp (1815) saved many miners."},
+{er:3,d:1,t:"c",q:"Methane burns in air only between roughly…",a:["5% and 15% by volume","0.1% and 1%","20% and 80%","50% and 100%"],e:"These are its lower and upper flammability limits at room conditions."},
+{er:3,d:1,t:"c",q:"Hydrogen's flammability range in air is…",a:["Very wide, about 4% to 75% by volume","Narrower than methane's","Zero","Only above 90%"],e:"A wide range and very low ignition energy make hydrogen safety a design priority."},
+{er:3,d:1,t:"c",q:"On a Bunsen burner, the cone angle gives the flame speed through…",a:["S_L = U sin α, with U the flow speed and α the half-angle","S_L = U / α","S_L = U cos α","S_L = U²"],e:"The flame stands still where its normal speed equals the normal component of the flow."},
+{er:3,d:1,t:"k",q:"Lean premixed combustors in gas turbines reduce NOx mainly by…",a:["Lowering the flame temperature","Removing nitrogen from the air","Adding soot","Burning rich"],e:"Thermal NO depends steeply on temperature, so lean premixing keeps peaks low."},
+{er:3,d:1,t:"k",q:"Blending hydrogen into natural gas burners mainly raises the risk of…",a:["Flashback, because the flame becomes faster","Soot formation","Lower flame temperature","Freezing"],e:"Higher burning velocity lets the flame travel upstream into the burner; burners must be adapted."},
+{er:3,d:2,t:"c",q:"The Darrieus–Landau instability of premixed flames is caused by…",a:["Thermal expansion across the flame, the density jump","Gravity alone","Radiation","Fuel impurities"],e:"It acts on all premixed flames; thermodiffusive effects can damp or amplify it."},
+{er:3,d:2,t:"c",q:"The Markstein length describes…",a:["How flame speed responds to stretch (strain and curvature)","The flame thickness","The quenching distance","The ignition delay"],e:"S_n = S_L − L·κ to first order; a negative Markstein length signals unstable, cellular flames."},
+{er:3,d:2,t:"c",q:"Counterflow flames are widely used to study…",a:["Strain effects and extinction limits","Spray breakup","Detonation cells","Soot oxidation in engines only"],e:"Opposed jets give a well-defined strain rate, ideal for extinction and kinetics validation."},
+{er:4,d:1,t:"c",q:"The d²-law of droplet combustion states that…",a:["The square of the droplet diameter decreases linearly with time","The diameter decreases linearly with time","The volume stays constant","The droplet grows as it burns"],e:"d² = d₀² − K t, with K the burning (or evaporation) rate constant."},
+{er:4,d:1,t:"n",q:"By the d²-law, doubling the initial droplet diameter makes its lifetime…",a:["Four times longer","Twice as long","The same","Half as long"],e:"Lifetime t = d₀²/K, so it scales with the diameter squared."},
+{er:4,d:1,t:"n",q:"A 100 µm droplet burns with K = 1 mm²/s. Its lifetime is about…",a:["0.01 s","1 s","0.1 s","100 s"],e:"t = d₀²/K = (0.1 mm)² / (1 mm²/s) = 0.01 s."},
+{er:4,d:1,t:"c",q:"Liquid fuels are atomized into sprays mainly to…",a:["Increase surface area, so they evaporate and mix faster","Make them heavier","Cool the engine","Change their chemical formula"],e:"Smaller droplets have far more surface per unit mass; evaporation is the first step of spray combustion."},
+{er:4,d:1,t:"c",q:"The Sauter mean diameter (D32) of a spray is…",a:["The diameter of a droplet with the same volume-to-surface ratio as the whole spray","The largest droplet","The nozzle diameter","The arithmetic mean diameter"],e:"D32 = Σd³/Σd², a natural measure when evaporation and surface processes matter."},
+{er:4,d:1,t:"c",q:"The Weber number compares…",a:["Aerodynamic (inertial) forces with surface tension","Viscosity with gravity","Heat with mass diffusion","Flow time with chemical time"],e:"Above a critical Weber number, droplets break up into smaller ones."},
+{er:4,d:1,t:"c",q:"Micro-explosion of emulsion or multicomponent droplets happens when…",a:["A volatile component boils inside the droplet and shatters it","The droplet freezes","The droplet stops burning","Oxygen dissolves into it"],e:"This secondary atomization can improve combustion; additives and blends are designed to trigger it."},
+{er:4,d:1,t:"c",q:"Droplet combustion experiments are often run in microgravity because…",a:["Without buoyancy the flame stays spherical, matching the simple theory","Fuels are cheaper in space","Oxygen is denser","Flames cannot form on Earth"],e:"Drop towers and the International Space Station have hosted long-running droplet combustion studies."},
+{er:4,d:1,t:"c",q:"Around an isolated burning droplet in still air, the flame sits…",a:["At a distance, as an envelope where fuel vapour and oxygen meet","On the liquid surface","Inside the droplet","Only behind it"],e:"It is a diffusion flame; heat flows back to evaporate the liquid."},
+{er:4,d:1,t:"k",q:"Sustainable aviation fuels (SAF) are…",a:["Low-carbon liquid fuels that can replace kerosene in existing jet engines","Batteries for aircraft","A kind of hydrogen gas","Engine lubricants"],e:"Being drop-in liquids, they are sprayed and burned like kerosene; their benefit comes over the life cycle."},
+{er:4,d:1,t:"k",q:"The label E10 on gasoline means…",a:["10% ethanol by volume","10% water","10 ppm sulfur","Euro 10 standard"],e:"Ethanol blending is a widespread biofuel route."},
+{er:4,d:2,t:"c",q:"The Ohnesorge number relates…",a:["Viscous forces to inertia and surface tension together","Heat release to radiation","Turbulence to chemistry","Pressure to density"],e:"Oh = μ/√(ρσL); with the Weber number it maps atomization regimes."},
+{er:4,d:2,t:"c",q:"In dense sprays, droplets often burn by group combustion, meaning…",a:["The flame surrounds a whole cloud of droplets instead of each one","Every droplet burns alone","Droplets merge into one","Combustion stops"],e:"Interaction between droplets changes vaporization and flame location; the group combustion number captures it."},
+{er:5,d:1,t:"c",q:"Turbulence increases the burning rate of premixed flames mainly by…",a:["Wrinkling the flame and increasing its surface area","Raising the adiabatic flame temperature","Removing nitrogen","Changing the fuel"],e:"Damköhler's classic idea: more flame area per unit cross-section means a faster turbulent flame."},
+{er:5,d:1,t:"c",q:"The Damköhler number is…",a:["A flow time divided by a chemical time","Inertia divided by viscosity","Thermal divided by mass diffusivity","Flame speed divided by sound speed"],e:"Large Da means fast chemistry: thin flamelets in a turbulent flow."},
+{er:5,d:1,t:"c",q:"In the flamelet concept, a turbulent flame is seen as…",a:["An ensemble of thin laminar flames wrinkled by the flow","A homogeneous reactor","A detonation wave","A cloud of droplets"],e:"It lets laminar flame physics and chemistry be reused inside turbulent models."},
+{er:5,d:1,t:"c",q:"Direct numerical simulation (DNS) of a turbulent flame…",a:["Resolves all scales of turbulence and flame without a turbulence model","Uses only averaged equations","Models only large eddies","Ignores chemistry"],e:"RANS averages everything, LES resolves large eddies, DNS resolves everything and is very expensive."},
+{er:5,d:1,t:"c",q:"The smallest eddies in a turbulent flow are of the…",a:["Kolmogorov scale","Integral scale","Taylor–Couette scale","Bunsen scale"],e:"Energy cascades from large to small eddies and is dissipated at the Kolmogorov scale."},
+{er:5,d:1,t:"c",q:"Swirl is used in gas turbine combustors to…",a:["Create a recirculation zone that anchors the flame","Remove soot","Cool the walls only","Increase fuel density"],e:"Hot products flow back toward the burner and keep igniting fresh mixture."},
+{er:5,d:1,t:"c",q:"Thermoacoustic combustion instability arises when…",a:["Heat-release fluctuations are in phase with pressure oscillations","The fuel runs out","Turbulence is absent","The flame is too cold to burn"],e:"Rayleigh's criterion; such instabilities can damage gas turbines and are a key issue with hydrogen."},
+{er:5,d:1,t:"c",q:"OH planar laser-induced fluorescence (OH-PLIF) is used to…",a:["Image the flame front and hot reaction zones","Measure fuel price","Weigh soot","Detect sound"],e:"OH marks reaction and burnt-gas regions; it is the standard way to see invisible hydrogen flames."},
+{er:5,d:1,t:"c",q:"Particle image velocimetry (PIV) measures…",a:["Velocity fields from the motion of seeded particles","Temperature directly","Chemical composition","Flame luminosity only"],e:"Two laser pulses and a camera give instantaneous 2D velocity maps."},
+{er:5,d:1,t:"k",q:"Hydrogen-fired gas turbines are hard to design mainly because hydrogen…",a:["Burns fast and diffuses quickly, raising flashback and instability risks","Has no energy","Makes soot","Cannot be ignited"],e:"Lean premixed hydrogen burners need new injector concepts, such as micromixers."},
+{er:5,d:2,t:"c",q:"The Karlovitz number compares…",a:["The chemical (flame) time with the Kolmogorov time","Viscous with inertial forces","Pressure with density","Radiation with conduction"],e:"Ka > 1 means the smallest eddies can enter the preheat zone, the thin reaction zones regime."},
+{er:5,d:2,t:"c",q:"The Borghi–Peters diagram classifies premixed turbulent combustion by…",a:["u′/S_L against the integral length over the flame thickness","Fuel type against pressure","Temperature against time","Soot against NOx"],e:"It shows the wrinkled, corrugated, thin reaction zone and broken reaction zone regimes."},
+{er:6,d:1,t:"c",q:"Soot forms most readily in…",a:["Fuel-rich regions, such as diffusion flames","Very lean premixed flames","Pure hydrogen flames","Cold air"],e:"Without enough oxygen, hydrocarbons grow into aromatics and particles."},
+{er:6,d:1,t:"c",q:"Polycyclic aromatic hydrocarbons (PAH) are important because they…",a:["Are precursors of soot particles","Remove NOx","Are the main product of hydrogen flames","Cool the flame"],e:"Soot inception is generally linked to PAH growth; many PAH are also toxic."},
+{er:6,d:1,t:"c",q:"A three-way catalyst in a gasoline car removes…",a:["CO, unburned hydrocarbons and NOx at the same time","Only CO₂","Only soot","Only water"],e:"It works best near stoichiometric mixtures, hence the lambda sensor."},
+{er:6,d:1,t:"c",q:"Selective catalytic reduction (SCR) in diesel engines reduces NOx using…",a:["Ammonia, usually from a urea solution","Pure oxygen","Gasoline","Carbon dioxide"],e:"NOx reacts with NH₃ over a catalyst to give N₂ and water."},
+{er:6,d:1,t:"c",q:"Exhaust gas recirculation (EGR) reduces NOx by…",a:["Diluting the charge and lowering peak flame temperature","Adding more oxygen","Raising the flame temperature","Removing fuel"],e:"Lower temperatures slow the strongly temperature-dependent thermal NO route."},
+{er:6,d:1,t:"c",q:"PM2.5 refers to…",a:["Particles smaller than 2.5 micrometres","Particles of 2.5 millimetres","2.5 ppm of NOx","Pollution measured at 2.5 km height"],e:"They penetrate deep into the lungs and are linked to serious health effects."},
+{er:6,d:1,t:"c",q:"Diesel particulate filters work by…",a:["Trapping soot and burning it off periodically","Turning soot into fuel","Adding sulfur","Cooling the exhaust to ice"],e:"Regeneration oxidizes the collected soot."},
+{er:6,d:1,t:"c",q:"Sulfur in fuels leads to…",a:["SO₂ emissions and acid rain","Lower CO₂","No pollutants at all","More hydrogen"],e:"Low-sulfur fuels also protect exhaust catalysts."},
+{er:6,d:1,t:"c",q:"Carbon monoxide is dangerous to people because it…",a:["Binds to haemoglobin and blocks oxygen transport","Is radioactive","Smells very strong","Freezes the lungs"],e:"It is colourless and odourless, which is why CO detectors matter."},
+{er:6,d:1,t:"k",q:"Black carbon (soot) affects the climate by…",a:["Absorbing sunlight and warming the air, and darkening snow and ice","Reflecting all sunlight","Absorbing CO₂","Making clouds disappear permanently"],e:"It is a short-lived but strong climate forcer, so cutting soot gives fast benefits."},
+{er:6,d:1,t:"k",q:"In ammonia flames, nitrogen oxides come mainly from…",a:["Fuel-bound nitrogen in NH₃ (fuel NO)","Carbon in the fuel","Soot oxidation","Water vapour"],e:"Rich–lean staging is one way to keep both NO and N₂O low."},
+{er:6,d:2,t:"c",q:"In the HACA mechanism of soot growth, HACA stands for…",a:["Hydrogen abstraction, acetylene (C₂H₂) addition","Heat and carbon accumulation","High-altitude carbon aerosol","Hydroxyl attack, carbon ablation"],e:"Surface sites are activated by H abstraction and grow by adding acetylene."},
+{er:6,d:2,t:"c",q:"The smoke point of a liquid fuel measures…",a:["Its tendency to soot: the flame height at which smoke appears","Its boiling point","Its ignition temperature","Its density"],e:"A lower smoke point means a sootier fuel, typical of aromatics."},
+{er:7,d:1,t:"c",q:"A detonation differs from a deflagration because it…",a:["Is a shock wave coupled to a reaction zone, travelling supersonically","Is a slow flame","Needs no fuel","Travels backwards"],e:"Deflagrations are subsonic and driven by diffusion; detonations by shock compression."},
+{er:7,d:1,t:"n",q:"The Chapman–Jouguet detonation speed of stoichiometric H₂/air is close to…",a:["2000 m/s","340 m/s","20 m/s","20 000 m/s"],e:"About 1970 m/s, nearly six times the speed of sound in air."},
+{er:7,d:1,t:"c",q:"The Chapman–Jouguet condition says that the burnt gas behind a steady detonation…",a:["Moves at the local speed of sound relative to the wave","Is at rest in the lab frame","Is colder than the unburnt gas","Moves at the flame speed"],e:"It selects a unique steady detonation speed from the Rayleigh line tangent to the Hugoniot."},
+{er:7,d:1,t:"c",q:"The ZND model describes a detonation as…",a:["A leading shock, then an induction zone, then a reaction zone","A turbulent flame","A cloud of droplets","A single reaction step without a shock"],e:"Named after Zeldovich, von Neumann and Döring, who proposed it independently in the 1940s."},
+{er:7,d:1,t:"c",q:"Real detonation fronts show a cellular pattern because…",a:["Transverse waves and triple points move across the front","The tube is square","The fuel is solid","Soot is added"],e:"The cells are recorded on soot-coated foils; their size measures mixture sensitivity."},
+{er:7,d:1,t:"c",q:"Deflagration-to-detonation transition (DDT) is promoted by…",a:["Obstacles and confinement that accelerate the flame","Open space and low pressure","Cooling the mixture","Removing fuel"],e:"Obstacles generate turbulence and pressure waves; this is used in pulse detonation engines and feared in safety."},
+{er:7,d:1,t:"c",q:"A rotating detonation engine (RDE)…",a:["Runs one or more detonation waves continuously around an annular chamber","Uses a rotating propeller","Burns only solid fuel","Works without oxygen"],e:"Pulse detonation engines fire repeated cycles; RDEs keep the waves spinning."},
+{er:7,d:1,t:"c",q:"Pressure gain combustion is attractive because…",a:["The products leave at higher pressure, which can raise cycle efficiency","It needs no fuel","It removes all NOx","It is silent"],e:"Conventional gas turbine combustors lose a little pressure; detonation-based ones can gain it."},
+{er:7,d:1,t:"c",q:"The specific impulse of a rocket engine measures…",a:["Thrust per unit propellant mass flow (or weight flow)","Engine mass","Chamber temperature only","Nozzle length"],e:"Hydrogen–oxygen engines have among the highest specific impulses of chemical rockets."},
+{er:7,d:1,t:"c",q:"A scramjet is an air-breathing engine in which…",a:["Combustion happens in a supersonic air stream","Air is compressed by a fan","Fuel burns at rest","No air is used"],e:"Residence times are about a millisecond, so mixing and ignition are major challenges."},
+{er:7,d:1,t:"k",q:"Besides CO₂, aviation warms the climate through…",a:["Contrails and NOx emitted at altitude","Lower ocean salinity","More oxygen","Snow on runways"],e:"Non-CO₂ effects are a large and uncertain share of aviation's climate impact."},
+{er:7,d:2,t:"c",q:"A larger detonation cell size means a mixture is…",a:["Less sensitive, harder to detonate","More sensitive","Always inert","Supersonic at rest"],e:"Critical tube diameters and initiation energies scale with cell size."},
+{er:8,d:1,t:"n",q:"The hydrogen content of ammonia, NH₃, is about…",a:["17.8% by mass","3% by mass","50% by mass","75% by mass"],e:"3 × 1.008 / 17.03 ≈ 0.178."},
+{er:8,d:1,t:"c",q:"LOHC stands for…",a:["Liquid organic hydrogen carrier","Low-oxygen heavy combustion","Liquefied oil and hydrogen compound","Lean oxidizer hydrogen cycle"],e:"A liquid that is loaded with hydrogen by hydrogenation and releases it on dehydrogenation."},
+{er:8,d:1,t:"c",q:"Hydrogen embrittlement means…",a:["Hydrogen makes some metals brittle and prone to cracking","Hydrogen freezes","Hydrogen becomes solid in pipes","Hydrogen burns without oxygen"],e:"Material choice matters for hydrogen pipelines, tanks and engines."},
+{er:8,d:1,t:"c",q:"E-fuels (electrofuels) are made from…",a:["Green hydrogen and captured CO₂ (or N₂ for ammonia)","Crude oil and coal","Batteries","Uranium"],e:"Electricity is stored in chemical bonds; their climate benefit depends on clean power and the carbon source."},
+{er:8,d:1,t:"c",q:"Per litre, liquid ammonia carries…",a:["More hydrogen than liquid hydrogen itself","No hydrogen","Exactly the same hydrogen as liquid hydrogen","Only carbon"],e:"Liquid ammonia is much denser than liquid hydrogen (−253 °C), so it packs more hydrogen per volume."},
+{er:8,d:1,t:"c",q:"Ammonia cracking is used to…",a:["Release hydrogen from ammonia","Make ammonia from oil","Remove soot","Freeze ammonia"],e:"2NH₃ → N₂ + 3H₂; partial cracking also helps ammonia burn better."},
+{er:8,d:1,t:"c",q:"Methane pyrolysis ('turquoise' hydrogen) produces hydrogen and…",a:["Solid carbon instead of CO₂","CO₂ only","Ammonia","Water"],e:"CH₄ → C + 2H₂; the carbon can be stored or sold."},
+{er:8,d:1,t:"k",q:"Net zero emissions means…",a:["Remaining emissions are balanced by removals from the atmosphere","No fuel is ever burned","Only electric cars exist","Emissions are moved to other countries"],e:"Hard-to-abate sectors may still burn fuels, balanced by carbon removal."},
+{er:8,d:1,t:"k",q:"Bioenergy with carbon capture and storage (BECCS) can give…",a:["Net negative emissions","Higher net emissions","No energy","Only electricity from coal"],e:"Plants take up CO₂; capturing it when the biomass is burned removes it from the cycle."},
+{er:8,d:1,t:"k",q:"Ammonia co-firing in coal power plants aims to…",a:["Replace part of the coal and cut CO₂ per unit of electricity","Increase coal use","Produce more soot","Make the plant smaller"],e:"Large-scale demonstrations have been carried out in Japan; NOx and N₂O control are central."},
+{er:8,d:1,t:"c",q:"Each conversion step, such as electricity to hydrogen to ammonia and back, …",a:["Loses energy, so round-trip efficiency is well below 100%","Creates extra energy","Has no losses","Doubles the energy"],e:"That is why hydrogen carriers are compared with techno-economic and life-cycle analyses."},
+{er:8,d:1,t:"c",q:"A levelized cost of energy (or of hydrogen) is…",a:["The lifetime cost divided by the lifetime output, discounted","The fuel price today","The tax on fuel","The cost of one machine"],e:"It allows fair comparison between technologies with different capital and running costs."},
+{d:2,t:"k",q:"Oxy-fuel combustion helps carbon capture because…",a:["Without N₂ the flue gas is mostly CO₂ and water, easy to separate","It produces no CO₂","It runs below 1000 K","It needs no oxygen"],e:"After the water is condensed, the flue gas is nearly pure CO₂, so expensive separation from nitrogen is avoided."}
+];
+
+/* ---------- sprites ---------- */
+const PAL={o:"#3a1406",r:"#e2452b",y:"#ff8a3d",l:"#ffd85a",w:"#fff4c8",k:"#1a1a1a",n:"#0b2340",b:"#2f7fd6",c:"#6fd3ff"};
+const SPARK=[".....oo.....","....oyo.....","....oyyo....","...oyllyo...","..oyylllyo..","..oylwwlyo..",".oylwwwwlyo.",".oylkwwklyo.",".oylwwwwlyo.",".oylwkkwlyo.",".oyllwwllyo.","..oyllllyo..","...oyyyyo...","....oooo...."];
+const DROP=[".....nn.....",".....nn.....","....ncnn....","....ncbn....","...nccbbn...","..nccbbbbn..","..nwcbbbbn..",".nwwcbbbbbn.",".ncbkbbkbbn.",".ncbbbbbbbn.",".ncbbkkbbbn.","..nbbbbbbn..","...nbbbbn...","....nnnn...."];
+const FEET={idle:["....o..o....","...oo..oo..."],w1:["...o....o...","..oo....oo.."],w2:[".....oo.....","....oooo...."],jump:["...o....o...","............"]};
+const FOE=[["...ssssss...","..sggggggs..",".sgllggggs..",".sgewggewgs.",".sgekggekgs.",".sggggggggs.",".sgggssgggs.","..sggggggs..","...ssssss...","...s....s..."],["...ssssss...","..sggggggs..",".sgllggggs..",".sgewggewgs.",".sgekggekgs.",".sggggggggs.",".sgggssgggs.","..sggggggs..","...ssssss...","....s..s...."]];
+const mk=(rows,pal)=>{const c=document.createElement('canvas');c.width=rows[0].length;c.height=rows.length;const x=c.getContext('2d');rows.forEach((r,j)=>[...r].forEach((ch,i)=>{if(ch!=='.'){x.fillStyle=pal[ch];x.fillRect(i,j,1,1)}}));return c};
+const heroFrames=(body,o)=>{const f={};for(const k in FEET)f[k]=mk(body.concat(FEET[k].map(r=>r.replace(/o/g,o))),PAL);return f};
+const tint=(rows,map)=>rows.map(r=>[...r].map(c=>map[c]||c).join(''));
+const PAL2={...PAL,H:"#ffffff",Y:"#ffe066",C:"#2f6fd6",B:"#bfe4ff",Q:"#1e3a8a"};Object.assign(PAL,PAL2);
+const heroSet=(body,o,hot,cool)=>({f:heroFrames(body,o),hot:heroFrames(tint(body,hot),o),cool:heroFrames(tint(body,cool),o)});
+const HEROES={spark:{name:"Spark",desc:"A flame kernel. Hot-headed, fast.",...heroSet(SPARK,'o',{y:'Y',l:'H'},{y:'C',l:'B',w:'B'})},drop:{name:"Droplet",desc:"A fuel droplet. Cool, ready to evaporate.",...heroSet(DROP,'n',{b:'y',c:'l'},{b:'Q',c:'C'})}};
+const FOESP=SYMP.map(S=>FOE.map(r=>mk(r,{s:S.foeC[2],g:S.foeC[0],l:S.foeC[1],e:"#ffffff",k:"#d0202a"})));
+
+/* ---------- state ---------- */
+const cv=document.getElementById('cv'),cx=cv.getContext('2d');cx.imageSmoothingEnabled=false;
+const W=384,H=224,TS=16,ROWS=14,GROUND=11;
+let coolT=0,wasHot=false,sootF=[],clouds=[],caps=[],qEra=1,tokens=[],chain=0,maxChain=0,chainNext=0,front=null,dsq=1,drops=[],eddies=[],boss=null,clean=0,fossil=0,dropsGot=0,eddyT=0;
+let hero='spark',mode='ug',lvl=0,score=0,lives=3,map,cols,ents,boxes,goalX,P,cam=0,paused=true,qLog=[],lvlRight=0,lvlAsked=0,boost=0,tick=0,carbon=0,queues=null,lastT='',qIdx=0,runSeed=Date.now()%2147483647,runSaved=false;
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+let save=store.get('symprun',null);
+const rng=s=>()=>(s=s*16807%2147483647)/2147483647;
+const shuffle=(a,r=Math.random)=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+
+/* question order: never two numerical questions in a row, and climate questions spread through the run */
+const QERA=q=>q.er||(q.e2?2:1);
+const buildQueues=()=>{const era=eraOf(lvl)+1;const ok=q=>QERA(q)===era&&(mode==='gr'||q.d===1);qEra=era;queues={c:[],n:[],k:[]};
+ const idx=shuffle(BANK.map((q,i)=>i).filter(i=>ok(BANK[i])));
+ if(mode==='gr')idx.sort((a,b)=>BANK[b].d-BANK[a].d+(Math.random()-0.5)*1.2);
+ for(const i of idx)queues[BANK[i].t].push(i);lastT='';qIdx=0};
+const PATTERN=['c','k','c','n','k','c','n','c','k','n'];
+const nextQ=()=>{if(eraOf(lvl)+1!==qEra)queues=null;if(!queues||!(queues.c.length+queues.n.length+queues.k.length))buildQueues();
+ let want=PATTERN[qIdx%PATTERN.length];qIdx++;
+ const order=[want,'c','k','n'].filter((t,i,a)=>a.indexOf(t)===i).filter(t=>!(t==='n'&&lastT==='n'));
+ for(const t of order)if(queues[t].length){lastT=t;return BANK[queues[t].shift()]}
+ const t=['n','c','k'].find(t=>queues[t].length);lastT=t;return BANK[queues[t].shift()]};
+
+/* ---------- level generation ---------- */
+const genLevel=i=>{const r=rng(runSeed+i*7919+1);const len=Math.min(150,104+(i%5)*10);cols=len;map=[];boxes={};for(let x=0;x<len;x++)map.push(new Array(ROWS).fill(0));
+ const ground=(x,top)=>{for(let y=top;y<ROWS;y++)map[x][y]=1};
+ ents=[];let x=0,h=GROUND;const spots=[];
+ const flat=n=>{for(let k=0;k<n&&x<len-14;k++,x++)ground(x,h)};
+ const foe=(tx)=>ents.push({x:tx*TS,y:h*TS-10,vx:-0.45,alive:true});
+ flat(10);
+ let gapPrev=false;
+ while(x<len-16){const t=gapPrev?0.5+r()*0.5:r(),s=x;gapPrev=t<0.2;
+  if(t<0.2){x+=2+Math.floor(r()*2);flat(0)}
+  else if(t<0.4){const w=6+Math.floor(r()*3);flat(w);const row=h-(r()<0.5?3:4);for(let k=s+1;k<s+w-1;k++)map[k][row]=2;spots.push([s+1+Math.floor(r()*(w-2)),row]);if(r()<0.5)spots.push([s+2+Math.floor(r()*(w-4)),row-4])}
+  else if(t<0.6){flat(8);const row=h-3-Math.floor(r()*3);spots.push([s+2,row]);if(r()<0.6)spots.push([s+3,row]);spots.push([s+5+Math.floor(r()*2),h-3-Math.floor(r()*3)]);if(r()<0.6)foe(s+6)}
+  else if(t<0.78){h=Math.max(8,Math.min(GROUND,h+(r()<0.5?-1:1)*(1+Math.floor(r()*2))));flat(5);if(r()<0.4)spots.push([s+2,h-4])}
+  else{flat(8);foe(s+4);if(r()<0.5)foe(s+6)}
+ }
+ h=GROUND;while(x<len){ground(x,h);x++}
+ /* place boxes on free spots: about half hold questions, the rest O2 or air */
+ const placed=[];for(const [bx,by] of spots){if(by<2||bx>=len-14||map[bx][by]!==0&&map[bx][by]!==2)continue;let top=ROWS;for(let y=by+1;y<ROWS;y++)if(map[bx][y]===1){top=y;break}if(top-by<3&&map[bx][by]!==2)continue;map[bx][by]=3;placed.push(bx+','+by)}
+ for(let k=14;placed.length<6&&k<len-20;k+=7){let top=ROWS;for(let y=0;y<ROWS;y++)if(map[k][y]===1){top=y;break}const by=top-3-(k%3);if(top<ROWS&&by>1&&map[k][by]===0&&map[k][by+1]===0&&map[k][by+2]===0){map[k][by]=3;placed.push(k+','+by)}}
+ shuffle(placed,r);const nq=Math.min(2,placed.length);
+ placed.forEach((k,j)=>{boxes[k]=j<nq?'q':(r()<0.58?'o2':'air')});
+ clouds=[{x0:Math.floor(len*0.5)*TS,st:'wait'}];if(i>=3)clouds.push({x0:Math.floor(len*0.78)*TS,st:'wait',spray:true});caps=[];sootF=[];coolT=0;wasHot=false;
+ for(const e of ents)if(i>=2&&r()<0.3){e.knock=true;e.kt=Math.floor(r()*200)}tokens=[];chain=0;maxChain=0;chainNext=0;
+ if(eraOf(i)===1){for(const k in boxes)if(boxes[k]==='q'&&Object.values(boxes).filter(v=>v==='q').length>1){boxes[k]='o2';break}
+  const SP=['H','O','OH'];for(let tx=16;tx<len-18;tx+=4+Math.floor(r()*3)){let top=ROWS;for(let y=0;y<ROWS;y++)if(map[tx][y]===1){top=y;break}if(top>=ROWS)continue;
+   const sp=r()<0.2?'HO2':SP[Math.floor(r()*3)];const yy=r()<0.55?top-1:top-3;if(map[tx][yy]!==0)continue;tokens.push({x:tx*TS+8,y:yy*TS+8,sp,taken:false})}
+  /* make sure each needed radical appears often enough, in order, along the course */
+  let need=0;for(const t of tokens){if(t.sp!=='HO2'&&r()<0.45){t.sp=SP[need%3];need++}}}
+ front=null;dsq=1;drops=[];eddies=[];boss=null;clean=0;fossil=0;dropsGot=0;eddyT=0;const Ei=eraOf(i);
+ const topAt=tx=>{for(let y=0;y<ROWS;y++)if(map[tx][y]===1)return y;return ROWS};
+ if(Ei===2)front={x:-120,sp:CHASE[i-11].sp,lab:CHASE[i-11].lab,kind:'flame'};
+ if(Ei===6)front={x:-160,sp:1.45+0.06*(i-35),lab:'Detonation wave · CJ speed ≈ 2 km/s',kind:'shock'};
+ if(Ei===3){for(let tx=12;tx<len-16;tx+=7+Math.floor(r()*4)){const tp=topAt(tx);if(tp<ROWS&&map[tx][tp-2]===0)drops.push({x:tx*TS+8,y:(tp-2)*TS+8,taken:false})}}
+ if(Ei===4){for(let tx=16;tx<len-20;tx+=12+Math.floor(r()*7))eddies.push({x:tx*TS,y:70+r()*60,r:34+r()*18,d:r()<0.5?-1:1})}
+ if(Ei===5)boss={x:goalX-90,y:GROUND*TS-30,vx:-0.9,vy:0,hp:3,inv:0,alive:true,t:0};
+ if(Ei===7){const G=['H₂','NH₃','e-fuel','Bio'],F=['Coal','Oil'];for(let tx=14;tx<len-18;tx+=4+Math.floor(r()*3)){const tp=topAt(tx);if(tp>=ROWS)continue;const yy=r()<0.55?tp-1:tp-3;if(map[tx][yy]!==0)continue;const fos=r()<0.3;tokens.push({x:tx*TS+8,y:yy*TS+8,sp:fos?F[Math.floor(r()*2)]:G[Math.floor(r()*4)],fos,taken:false})}}
+ goalX=(len-7)*TS;
+ P={x:2*TS,y:GROUND*TS-15,vx:0,vy:0,w:10,h:15,on:false,face:1,inv:0,sx:2*TS,sy:GROUND*TS-15};cam=0;lvlRight=0;lvlAsked=0;
+ document.getElementById('hlvl').textContent=`${SYMP[i].n} Symposium · ${SYMP[i].y}`};
+
+/* ---------- physics ---------- */
+const solid=(tx,ty)=>tx>=0&&tx<cols&&ty>=0&&ty<ROWS&&map[tx][ty]>0;
+const keys={L:false,R:false,J:false};let jumpHeld=false;
+const hitBox=(o,dx,dy)=>{const x0=Math.floor((o.x+dx)/TS),x1=Math.floor((o.x+dx+o.w-1)/TS),y0=Math.floor((o.y+dy)/TS),y1=Math.floor((o.y+dy+o.h-1)/TS);for(let tx=x0;tx<=x1;tx++)for(let ty=y0;ty<=y1;ty++)if(solid(tx,ty))return{tx,ty};return null};
+const pops=[],bumps=[],puffs=[],toasts=[];
+const update=()=>{tick++;if(boost>0){boost--;wasHot=true}else if(wasHot){wasHot=false;coolT=150;toast('Cooling down: low-temperature combustion',P.x-10,P.y-30,'#9fdcff')}if(coolT>0)coolT--;const sp=boost>0?2.6:coolT>0?1.6:1.9;
+ const acc=0.35;if(keys.L){P.vx=Math.max(P.vx-acc,-sp);P.face=-1}else if(keys.R){P.vx=Math.min(P.vx+acc,sp);P.face=1}else P.vx*=0.78;
+ if(keys.J&&P.on&&!jumpHeld){P.vy=-6.9;P.on=false;jumpHeld=true}
+ if(!keys.J){jumpHeld=false;if(P.vy<-2.5)P.vy=-2.5}
+ P.vy=Math.min(P.vy+0.32,7);
+ let c=hitBox(P,P.vx,0);if(c){P.x=P.vx>0?c.tx*TS-P.w:(c.tx+1)*TS;P.vx=0}else P.x+=P.vx;
+ if(P.x<cam)P.x=cam;
+ c=hitBox(P,0,P.vy);P.on=false;
+ if(c){if(P.vy>0){P.y=c.ty*TS-P.h;P.on=true}else{P.y=(c.ty+1)*TS;
+   const x0=Math.floor(P.x/TS),x1=Math.floor((P.x+P.w-1)/TS),ty=c.ty;let hq=null;for(let tx=x0;tx<=x1;tx++)if(map[tx]&&map[tx][ty]===3)hq=tx;
+   if(hq!==null)openBox(hq,ty)}
+  P.vy=0}else P.y+=P.vy;
+ if(P.on&&solid(Math.floor(P.x/TS),Math.floor((P.y+P.h+1)/TS))&&solid(Math.floor((P.x+P.w-1)/TS),Math.floor((P.y+P.h+1)/TS))){P.sx=P.x;P.sy=P.y}
+ if(P.inv>0)P.inv--;
+ if(P.y>H+20){hurt(true);return}
+ for(const e of ents){if(!e.alive)continue;if(!solid(Math.floor((e.x+6)/TS),Math.floor((e.y+10)/TS))){e.y+=2.5;if(e.y>H)e.alive=false;continue}const ex=e.x+e.vx,front=Math.floor((e.vx<0?ex:ex+12)/TS),foot=Math.floor((e.y+10)/TS),row=Math.floor((e.y+5)/TS);
+  if(solid(front,row)||!solid(front,foot))e.vx*=-1;else e.x=ex;
+  if(P.x<e.x+12&&P.x+P.w>e.x&&P.y<e.y+10&&P.y+P.h>e.y){
+   if(boost>0){e.alive=false;score+=20;carbon++;puffs.push({x:e.x+6,y:e.y+5,t:18});toast(`Shield! ${SYMP[lvl].foe} captured +20`,e.x,e.y-6,'#9fdcff')}
+   else if(coolT>0&&/NOx|Soot/.test(SYMP[lvl].foe)&&P.inv===0){if(tick%30===0)toast('Low-temperature flame: no NOx or soot',P.x-10,P.y-20,'#9fdcff')}
+   else if(P.vy>0.5&&P.y+P.h-e.y<8){e.alive=false;P.vy=-5;score+=20;carbon++;puffs.push({x:e.x+6,y:e.y+5,t:18});toast(`${SYMP[lvl].foe} captured +20`,e.x,e.y-6,'#7be08a')}else if(P.inv===0)hurt(false)}}
+ const Ec=eraOf(lvl);
+ if(front){front.x+=front.sp;if(front.x>P.x-4){toast(front.kind==='shock'?'The shock caught you!':'The flame caught you!',P.x,P.y-24,'#ffb0b0');front.x=P.x-190;hurt(false);if(paused)return}}
+ if(Ec===3){dsq-=1/1700;for(const d of drops){if(!d.taken&&Math.abs(P.x+5-d.x)<10&&Math.abs(P.y+7-d.y)<12){d.taken=true;dropsGot++;dsq=Math.min(1,dsq+0.35);score+=15;toast('Fuel drop +15 · d² restored',d.x-8,d.y-10,'#9fdcff')}}
+  if(dsq<=0){toast('Fully evaporated!',P.x,P.y-24,'#ffb0b0');dsq=1;hurt(false);if(paused)return}}
+ if(Ec===4){eddyT++;for(const e of eddies){const dx=P.x+5-e.x,dy=P.y+7-e.y;if(dx*dx+dy*dy<e.r*e.r){P.vx+=e.d*0.22;P.vy-=0.18}}}
+ if(boss&&boss.alive){boss.t++;boss.x+=boss.vx;if(boss.x<goalX-230||boss.x>goalX-20)boss.vx*=-1;boss.vy+=0.3;boss.y+=boss.vy;if(boss.y>GROUND*TS-30){boss.y=GROUND*TS-30;boss.vy=0;if(boss.t%110===0)boss.vy=-6}if(boss.inv>0)boss.inv--;
+  if(P.x<boss.x+36&&P.x+P.w>boss.x&&P.y<boss.y+30&&P.y+P.h>boss.y){if((boost>0||(P.vy>0.5&&P.y+P.h-boss.y<12))&&boss.inv===0){boss.hp--;boss.inv=40;P.vy=-6.5;score+=60;toast(boss.hp?`NOx hit! ${boss.hp} to go`:'NOx defeated · exhaust cleaned +60',boss.x,boss.y-12,'#7be08a');if(!boss.hp){boss.alive=false;carbon+=3}}else if(P.inv===0&&boss.inv===0)hurt(false)}
+  if(P.x>goalX-12){P.x=goalX-12;if(tick%60===0)toast('Defeat the NOx first',P.x-40,P.y-20,'#ffc23d')}}
+ for(const t of tokens){if(t.taken)continue;if(Ec===7&&Math.abs(P.x+5-t.x)<9&&Math.abs(P.y+7-t.y)<11){t.taken=true;if(t.fos){fossil++;score=Math.max(0,score-10);toast(`${t.sp}: fossil carbon, CO₂ emitted −10`,t.x-8,t.y-10,'#ffb0b0')}else{clean++;score+=15;toast(`${t.sp}: clean fuel +15`,t.x-8,t.y-10,'#7be08a')}continue}
+  if(Ec!==1)continue;
+  if(Math.abs(P.x+5-t.x)<9&&Math.abs(P.y+7-t.y)<11){t.taken=true;const want=['H','O','OH'][chainNext];
+   if(t.sp==='HO2'){toast('H + O₂ + M → HO₂ + M · chain terminated',t.x-8,t.y-10,'#ff8a7a');chain=0;chainNext=0}
+   else if(t.sp===want){chain++;maxChain=Math.max(maxChain,chain);score+=10*chain;const eq=['H + O₂ → OH + O  branching','O + H₂ → OH + H','OH + H₂ → H₂O + H'][chainNext];toast(eq+'  +'+10*chain,t.x-8,t.y-10,'#9fdcff');chainNext=(chainNext+1)%3;if(chainNext===0){score+=50;toast('Cycle complete: H₂O formed +50',t.x-8,t.y-22,'#ffd85a')}}
+   else{toast(`Wrong radical: ${want} was needed · chain broken`,t.x-8,t.y-10,'#ffb0b0');chain=0;chainNext=0}}}
+ /* question cloud: follows the hero and drops a timed question */
+ for(const c of clouds){
+  if(c.st==='wait'&&P.x>c.x0-120){c.st='follow';c.x=cam+W+30;c.y=34;c.t=0;toast(c.spray?'A spray cloud! Watch for falling soot':'A question cloud is coming',P.x,P.y-30,'#ffffff')}
+  else if(c.spray&&c.st==='follow'){c.t++;c.x+=(P.x+4-c.x)*0.05;c.y=30+Math.sin(c.t/10)*3;if(c.t>90&&c.t<200&&c.t%18===0)sootF.push({x:c.x+(Math.random()-0.5)*40,y:c.y+10,vy:1.6});if(c.t>220)c.st='leave'}
+  else if(c.st==='follow'){c.t++;c.x+=(P.x+4-c.x)*0.04;c.y=30+Math.sin(c.t/12)*3;if(c.t===140){caps.push({x:c.x,y:c.y+12,vy:0,land:false,c});c.st='hover'}}
+  else if(c.st==='hover'){c.t++;c.x+=(P.x+4-c.x)*0.02;if(c.t>200)c.st='leave'}
+  else if(c.st==='leave'){c.x-=2.2;c.y-=0.6;if(c.x<cam-60)c.st='done'}}
+ for(const f of sootF){f.y+=f.vy;if(!f.dead&&Math.abs(f.x-(P.x+5))<7&&f.y>P.y&&f.y<P.y+P.h){f.dead=true;if(boost>0)toast('Shield burned the soot',P.x,P.y-20,'#9fdcff');else if(P.inv===0){toast('Soot hit you!',P.x,P.y-20,'#ffb0b0');hurt(false);if(paused)return}}if(f.y>H)f.dead=true}
+ sootF=sootF.filter(f=>!f.dead);
+ for(const e of ents){if(!e.alive||!e.knock||Math.abs(e.x-P.x)>W*0.7)continue;e.kt++;if(e.kt>=260){e.alive=false;e.kt=0;puffs.push({x:e.x+6,y:e.y+5,t:18});toast('KNOCK! End-gas autoignition',e.x-20,e.y-14,'#ff8a3d');const dx=P.x+5-(e.x+6),dy=P.y+7-(e.y+5);if(dx*dx+dy*dy<30*30&&boost===0&&P.inv===0){hurt(false);if(paused)return}}}
+ for(const k of caps){if(!k.land){k.vy=Math.min(k.vy+0.12,2.6);k.x+=(P.x+4-k.x)*0.02;k.y+=k.vy;if(solid(Math.floor(k.x/TS),Math.floor((k.y+6)/TS))){k.land=true;k.y=Math.floor((k.y+6)/TS)*TS-6}
+   if(k.y>H+10){k.dead=true;k.c.st='follow';k.c.t=60;k.c.x=cam+W+30}}
+  if(!k.dead&&P.x<k.x+6&&P.x+P.w>k.x-6&&P.y<k.y+6&&P.y+P.h>k.y-6){k.dead=true;paused=true;const fx=(k.x-cam)/W,fy=k.y/H;setTimeout(()=>ask(false,null,fx,fy,true),150)}}
+ caps=caps.filter(k=>!k.dead);
+ cam=Math.max(0,Math.min(P.x-W*0.4,cols*TS-W));
+ if(P.x>goalX){paused=true;finale()}
+ hud()};
+const toast=(t,x,y,c)=>toasts.push({t,x,y,c,life:60});
+const openBox=(tx,ty)=>{map[tx][ty]=4;bumps.push({x:tx,y:ty,t:10});const kind=boxes[tx+','+ty]||'q';
+ if(kind==='o2'){score+=50;boost=180;toast('O₂: hot flame + shield (3 s)',P.x-10,P.y-30,'#ffffff');pops.push({x:tx*TS+8,y:ty*TS,k:'o2',t:40});toast('O₂ +50 · oxygen boost',tx*TS,ty*TS-12,'#9fdcff')}
+ else if(kind==='air'){score+=30;if(lives<3)lives++;coolT=300;boost=0;toast('Diluted mixture: low-temperature combustion',P.x-10,P.y-44,'#9fdcff');pops.push({x:tx*TS+8,y:ty*TS,k:'air',t:40});toast('Air +30 · 21% O₂, 78% N₂',tx*TS,ty*TS-12,'#e8f1ff')}
+ else{pops.push({x:tx*TS+8,y:ty*TS,k:'q',t:20});const bx=(tx*TS+8-cam)/W,by=(ty*TS+8)/H;setTimeout(()=>ask(false,null,bx,by),180);paused=true}};
+const hurt=fell=>{lives--;P.inv=90;if(lives<=0){paused=true;lives=3;showCard(`<span class="k">Flame out</span><h2>Extinguished at the ${SYMP[lvl].n} Symposium</h2><p>The ${SYMP[lvl].foe} won this round. The symposium starts again, with fresh questions.</p><div class="row"><button class="btn main" id="again" type="button">Try again</button></div>`,()=>document.getElementById('again').onclick=()=>{hideCard();genLevel(lvl);paused=false});return}
+ if(fell){P.x=P.sx;P.y=P.sy;P.vx=0;P.vy=0;cam=Math.max(0,Math.min(P.x-W*0.4,cols*TS-W))}else{P.vy=-4;P.vx=-P.face*2}hud()};
+
+/* ---------- city skylines ---------- */
+const R=(x,y,w,h,c)=>{cx.fillStyle=c;cx.fillRect(x|0,y|0,w|0,h|0)};
+const tri=(x1,y1,x2,y2,x3,y3,c)=>{cx.fillStyle=c;cx.beginPath();cx.moveTo(x1,y1);cx.lineTo(x2,y2);cx.lineTo(x3,y3);cx.fill()};
+const BASE=176;
+const house=(x,w,h,c,roof)=>{R(x,BASE-h,w,h,c);tri(x-2,BASE-h,x+w/2,BASE-h-w*0.45,x+w+2,BASE-h,roof);R(x+w*0.65,BASE-h-w*0.4,3,w*0.3,roof);for(let k=0;k<2;k++)R(x+3+k*(w-9),BASE-h+5,3,4,'rgba(255,240,200,.75)')};
+const CITY={
+ swampscott(o,S){R(0,128,W,48,'#5a9ac0');for(let i=0;i<20;i++)R(((i*41-o*0.5)%W+W)%W,134+(i*7)%36,10,1,'rgba(255,255,255,.55)');
+  const sail=(x,y)=>{R(x,y+10,18,4,'#6a3a2a');tri(x+9,y-10,x+9,y+9,x+17,y+9,'#fff6e8');tri(x+8,y-4,x+8,y+9,x+2,y+9,'#ffe9cc')};
+  for(let k=0;k<3;k++){const bx=((k*170+40-o*0.4)%(W+60)+W+60)%(W+60)-30;sail(bx,118+k*6)}
+  for(let k=0;k<6;k++){const bx=((k*92-o)%552+552)%552-60;if(k%3===1){R(bx+8,BASE-34,14,34,S.mid);tri(bx+6,BASE-34,bx+15,BASE-66,bx+24,BASE-34,S.mid);R(bx+14,BASE-76,2,12,S.mid)}else{house(bx,24,22,S.mid,'#5a2e22');house(bx+34,20,18,'#9a5a44','#5a2e22')}}},
+ rochester(o,S){for(let k=0;k<6;k++){const bx=((k*80-o*0.5)%480+480)%480-40;R(bx,BASE-40,46,40,S.far);for(let j=0;j<4;j++)tri(bx+j*12,BASE-40,bx+j*12,BASE-50,bx+12+j*12,BASE-40,S.far)}
+  const fx=((300-o*0.5)%700+700)%700-100;R(fx,BASE-60,40,60,'#6a5a7a');R(fx+40,BASE-60,26,60,'#cfe6ff');for(let j=0;j<6;j++)R(fx+42+j*4,BASE-60,1,60,'rgba(255,255,255,.8)');R(fx+66,BASE-60,40,60,'#6a5a7a');R(fx+36,BASE-8,36,8,'rgba(255,255,255,.7)');
+  const tx=((140-o)%440+440)%440-40;R(tx,BASE-110,30,110,S.mid);R(tx+4,BASE-124,22,14,S.mid);R(tx+8,BASE-134,14,10,S.mid);R(tx+12,BASE-142,6,8,S.mid);R(tx+14,BASE-156,2,14,S.mid);for(let j=0;j<12;j++)for(let i=0;i<3;i++)R(tx+5+i*8,BASE-104+j*8,3,4,'rgba(255,235,190,.7)');
+  for(let k=0;k<4;k++){const bx=((k*150+260-o)%600+600)%600-60;R(bx,BASE-46,34,46,'#7a4050');for(let j=0;j<4;j++)for(let i=0;i<3;i++)R(bx+5+i*10,BASE-40+j*10,4,5,'rgba(255,230,190,.6)')}},
+ madison(o,S){R(0,150,W,26,'#4aa0c8');for(let i=0;i<14;i++)R(((i*53-o*0.4)%W+W)%W,154+(i*5)%18,12,1,'rgba(255,255,255,.6)');
+  for(let k=0;k<8;k++){const bx=((k*60-o*0.6)%480+480)%480-40;cx.fillStyle='#4f8a5a';cx.beginPath();cx.arc(bx+10,150,10,Math.PI,0);cx.fill();R(bx+9,148,2,4,'#3a5a3a')}
+  const cx0=((200-o)%540+540)%540-150;R(cx0,BASE-30,150,30,'#e8e6dc');for(let i=0;i<10;i++)R(cx0+6+i*14,BASE-28,4,28,'#cfcbbd');R(cx0+45,BASE-60,60,30,'#e8e6dc');for(let i=0;i<6;i++)R(cx0+49+i*9,BASE-58,3,28,'#cfcbbd');
+  cx.fillStyle='#f2f0e6';cx.beginPath();cx.ellipse(cx0+75,BASE-60,26,30,0,Math.PI,0);cx.fill();R(cx0+70,BASE-104,10,14,'#f2f0e6');R(cx0+74,BASE-114,2,10,'#c9a24a');R(cx0+72,BASE-118,6,5,'#c9a24a')},
+ cambridge(o,S){
+  /* Boston across the Charles, as it looked around 1952 */
+  const bo=((40-o*0.3)%520+520)%520-80;
+  for(let k=0;k<14;k++)R(bo+k*14,138-(k*7)%10,13,14+(k*7)%10,'#c995a6');
+  R(bo+70,96,14,46,'#b98496');tri(bo+68,96,bo+77,80,bo+86,96,'#b98496');R(bo+76,72,2,8,'#b98496');cx.fillStyle='#fff3d6';cx.beginPath();cx.arc(bo+77,104,3,0,7);cx.fill();
+  R(bo+120,124,34,18,'#d9b2bc');R(bo+131,116,12,8,'#d9b2bc');cx.fillStyle='#e8b93a';cx.beginPath();cx.ellipse(bo+137,116,8,7,0,Math.PI,0);cx.fill();R(bo+135,104,4,6,'#e8b93a');
+  R(0,142,W,34,'#5a8ac0');for(let i=0;i<12;i++)R(((i*61-o*0.5)%W+W)%W,148+(i*3)%22,14,1,'rgba(255,255,255,.55)');
+  const lb=((260-o*0.45)%560+560)%560-120;R(lb,136,170,5,'#d7cfc4');for(let k=0;k<6;k++){cx.fillStyle='#d7cfc4';cx.beginPath();cx.ellipse(lb+14+k*28,141,13,6,0,0,Math.PI);cx.fill()}
+  for(const t of [52,112]){R(lb+t,122,8,14,'#b8b0a4');R(lb+t-1,120,10,3,'#b8b0a4')}
+  for(let k=0;k<2;k++){const bx=((k*210+60-o*0.6)%(W+60)+W+60)%(W+60)-30;R(bx,160,12,3,'#ffffff');tri(bx+6,142,bx+6,159,bx+12,159,'#ffffff')}
+  /* MIT Building 10 and the Great Dome, Cambridge side */
+  const mx=((150-o)%520+520)%520-170,st='#ece6d8',sh='#d3cab6',dk='#a89c80';
+  R(mx,BASE-38,170,38,st);for(let j=0;j<3;j++)for(let i=0;i<9;i++){if(i>=3&&i<=5)continue;R(mx+6+i*18,BASE-33+j*11,6,7,'#8aa0b8')}
+  R(mx+52,BASE-48,66,48,st);
+  R(mx+70,BASE-66,30,16,sh);for(let i=0;i<6;i++)R(mx+72+i*5,BASE-63,2,10,dk);
+  cx.fillStyle=st;cx.beginPath();cx.ellipse(mx+85,BASE-66,19,9,0,Math.PI,0);cx.fill();R(mx+83,BASE-77,4,3,sh);
+  tri(mx+50,BASE-48,mx+85,BASE-58,mx+120,BASE-48,st);tri(mx+56,BASE-49,mx+85,BASE-55,mx+114,BASE-49,sh);R(mx+52,BASE-48,66,4,sh);
+  for(let i=0;i<10;i++){R(mx+55+i*6.3,BASE-42,3,34,'#fbf8f0');R(mx+57+i*6.3,BASE-42,1,34,dk)}
+  R(mx+50,BASE-8,70,4,sh);R(mx+46,BASE-4,78,4,st)},
+ deco(o,S,list){const P0=(x,per)=>((x-o)%per+per)%per-60;
+  for(const d of list){
+   if(d==='sea'||d==='lake'){R(0,150,W,26,d==='sea'?'#3f86c0':'#4f9ac8');for(let i=0;i<12;i++)R(((i*61-o*0.5)%W+W)%W,154+(i*5)%18,12,1,'rgba(255,255,255,.55)')}
+   if(d==='snow'||d==='mountains'||d==='fuji'||d==='vesuvius'){const per=d==='fuji'||d==='vesuvius'?640:300;for(let k=0;k<(d==='fuji'||d==='vesuvius'?1:3);k++){const x=((k*130+80-o*0.25)%per+per)%per-120,h=d==='fuji'?110:d==='vesuvius'?80:70+k*15;
+     tri(x,BASE-6,x+h*1.3,BASE-6-h,x+h*2.6,BASE-6,d==='vesuvius'?'#6a5a52':'#7d8fb0');if(d!=='vesuvius'&&d!=='mountains')tri(x+h*1.3-h*0.35,BASE-6-h*0.73,x+h*1.3,BASE-6-h,x+h*1.3+h*0.35,BASE-6-h*0.73,'#ffffff');
+     if(d==='vesuvius'){R(x+h*1.2,BASE-6-h,h*0.2,3,'#6a5a52');for(let s2=0;s2<4;s2++){cx.fillStyle=`rgba(150,150,160,${0.5-s2*0.1})`;cx.beginPath();cx.arc(x+h*1.3+s2*6,BASE-14-h-s2*10-(tick*0.2%10),6+s2*2,0,7);cx.fill()}}}}
+   if(d==='hills'){cx.fillStyle='#6fa860';for(let k=0;k<4;k++){const x=((k*140-o*0.4)%560+560)%560-120;cx.beginPath();cx.ellipse(x+70,BASE,90,34,0,Math.PI,0);cx.fill()}}
+   if(d==='palms'||d==='pines'||d==='maples'||d==='eucalyptus'||d==='sakura'){for(let k=0;k<5;k++){const x=P0(k*95+30,480);if(d==='palms'){for(let j=0;j<8;j++)R(x+Math.sin(j/3)*3,BASE-8-j*6,4,7,'#8a5a32');cx.strokeStyle='#2f8a3a';cx.lineWidth=3;for(let a2=0;a2<5;a2++){const an=-2.6+a2*0.55;cx.beginPath();cx.moveTo(x+2,BASE-56);cx.quadraticCurveTo(x+2+Math.cos(an)*14,BASE-60+Math.sin(an)*10-6,x+2+Math.cos(an)*24,BASE-50+Math.sin(an)*12);cx.stroke()}}
+     else if(d==='pines'){R(x+5,BASE-12,3,12,'#5a3a22');for(let j=0;j<3;j++)tri(x-6+j*2,BASE-12-j*10,x+6,BASE-34-j*10,x+18-j*2,BASE-12-j*10,'#2f6a4a');tri(x+1,BASE-38,x+6,BASE-44,x+11,BASE-38,'#ffffff')}
+     else{R(x+6,BASE-14,3,14,'#6a4a2a');cx.fillStyle=d==='maples'?['#e2582b','#f0a030','#c93a2a'][k%3]:d==='sakura'?'#ffc6dc':'#7fa07a';cx.beginPath();cx.arc(x+7,BASE-22,12,0,7);cx.arc(x,BASE-16,8,0,7);cx.arc(x+14,BASE-16,8,0,7);cx.fill()}}}
+   if(d==='gorge'){const x=P0(200,520);R(x,BASE-60,50,60,'#7a6a5a');R(x+50,BASE-60,22,60,'#d8f0ff');for(let j=0;j<4;j++)R(x+52+j*5,BASE-60,1,60,'#ffffff');R(x+72,BASE-60,50,60,'#7a6a5a');R(x+40,BASE-8,40,8,'rgba(255,255,255,.7)')}
+   const one=(per,fn)=>{const x=P0(160,per);fn(x)};
+   if(d==='gothic'||d==='spires')for(let k=0;k<(d==='spires'?4:2);k++){const x=P0(k*120+60,480);R(x,BASE-70,18,70,'#b9a58a');tri(x-2,BASE-70,x+9,BASE-104,x+20,BASE-70,'#a89478');for(let j=0;j<3;j++)R(x+7,BASE-62+j*18,4,9,'#4a5a7a')}
+   if(d==='chapel')one(520,x=>{R(x,BASE-50,110,50,'#d8ccb0');for(const c of[0,104])R(x+c,BASE-74,8,74,'#cdbf9f');for(const c of[0,104])tri(x+c-1,BASE-74,x+c+4,BASE-88,x+c+9,BASE-74,'#cdbf9f');for(let j=0;j<6;j++)R(x+12+j*16,BASE-44,8,32,'#6a7fa0')});
+   if(d==='campanile')one(480,x=>{R(x,BASE-110,18,110,'#e6dfcf');R(x+3,BASE-100,12,8,'#6a7fa0');tri(x-2,BASE-110,x+9,BASE-130,x+20,BASE-110,'#7a8a6a')});
+   if(d==='cathedral')one(520,x=>{for(const c of[0,60]){R(x+c,BASE-90,26,90,'#c9bfa8');tri(x+c,BASE-90,x+c+13,BASE-112,x+c+26,BASE-90,'#b8ad94')}R(x+26,BASE-60,34,60,'#c9bfa8');cx.fillStyle='#6a7fa0';cx.beginPath();cx.arc(x+43,BASE-44,9,0,7);cx.fill();R(x+38,BASE-24,10,24,'#5a4a3a')});
+   if(d==='barn')one(440,x=>{R(x,BASE-28,40,28,'#b4402a');tri(x-3,BASE-28,x+20,BASE-44,x+43,BASE-28,'#8a2e1e');R(x+15,BASE-16,10,16,'#f2ece0');R(x+50,BASE-50,10,50,'#c9c2b0');cx.fillStyle='#c9c2b0';cx.beginPath();cx.arc(x+55,BASE-50,5,Math.PI,0);cx.fill()});
+   if(d==='clock')one(460,x=>{R(x,BASE-96,22,96,'#c9a888');R(x-6,BASE-40,34,40,'#b99878');tri(x,BASE-96,x+11,BASE-112,x+22,BASE-96,'#8a6a4a');cx.fillStyle='#fff6e0';cx.beginPath();cx.arc(x+11,BASE-82,6,0,7);cx.fill();R(x+10,BASE-86,2,5,'#2a2a2a')});
+   if(d==='tokyotower')one(520,x=>{tri(x,BASE,x+22,BASE-130,x+44,BASE,'#e2452b');tri(x+8,BASE,x+22,BASE-100,x+36,BASE,S.sky[1]);for(let j=0;j<5;j++)R(x+22-(5-j)*3.5,BASE-30-j*20,(5-j)*7,3,'#ffffff');R(x+21,BASE-150,2,20,'#e2452b')});
+   if(d==='shrine')one(520,x=>{for(let j=0;j<5;j++)R(x-30+j*8,BASE-8-j*8,140-j*16,8,'#6fa860');R(x+30,BASE-70,30,30,'#efe7d3');cx.fillStyle='#e8b93a';cx.beginPath();cx.ellipse(x+45,BASE-70,15,14,0,Math.PI,0);cx.fill()});
+   if(d==='twindomes')one(500,x=>{R(x+18,BASE-50,40,50,'#c98a6a');for(const c of[0,58]){R(x+c,BASE-96,18,96,'#c98a6a');cx.fillStyle='#4f8a6a';cx.beginPath();cx.ellipse(x+c+9,BASE-96,9,12,0,Math.PI,0);cx.fill();R(x+c+8,BASE-112,2,6,'#4f8a6a')}});
+   if(d==='needle')one(520,x=>{R(x+10,BASE-120,4,120,'#e6e6e6');tri(x+2,BASE,x+12,BASE-60,x+22,BASE,'#d0d0d0');cx.fillStyle='#e6e6e6';cx.beginPath();cx.ellipse(x+12,BASE-122,16,5,0,0,7);cx.fill();R(x+11,BASE-140,2,14,'#e6e6e6')});
+   if(d==='opera')one(520,x=>{R(x-10,BASE-16,110,16,'#d8ccb0');for(let j=0;j<4;j++){cx.fillStyle=j%2?'#f4f4f0':'#ffffff';cx.beginPath();cx.moveTo(x+j*22,BASE-16);cx.quadraticCurveTo(x+j*22+6,BASE-60+j*4,x+j*22+28,BASE-66+j*6);cx.lineTo(x+j*22+26,BASE-16);cx.fill()}});
+   if(d==='flatirons')for(let k=0;k<4;k++){const x=P0(k*60+40,360);cx.fillStyle=k%2?'#b4704a':'#a0603f';cx.beginPath();cx.moveTo(x,BASE);cx.lineTo(x+26,BASE-70-k*6);cx.lineTo(x+40,BASE);cx.fill()}
+   if(d==='castle')one(520,x=>{cx.fillStyle='#6a7a5a';cx.beginPath();cx.ellipse(x+60,BASE,90,40,0,Math.PI,0);cx.fill();R(x+10,BASE-70,100,34,'#8a8070');for(let j=0;j<10;j++)R(x+10+j*10,BASE-76,6,6,'#8a8070');R(x+40,BASE-92,18,22,'#8a8070');for(let j=0;j<6;j++)R(x+16+j*15,BASE-62,4,8,'#3a3a40')});
+   if(d==='towers')for(let k=0;k<4;k++){const x=P0(k*80+20,400),h=90+k%2*40;R(x,BASE-h,26,h,'#3a3f4a');for(let j=8;j<h-6;j+=8)R(x+3,BASE-h+j,20,2,'#8aa0c0');if(k===1){R(x+6,BASE-h-24,3,24,'#3a3f4a');R(x+17,BASE-h-24,3,24,'#3a3f4a')}}
+   if(d==='bridge')one(420,x=>{cx.strokeStyle='#efefef';cx.lineWidth=3;cx.beginPath();cx.ellipse(x+60,BASE-6,60,20,0,Math.PI,0);cx.stroke();R(x,BASE-8,120,3,'#efefef')});
+   if(d==='temple')one(520,x=>{R(x,BASE-14,90,14,'#e6e0d0');for(let j=0;j<3;j++){cx.fillStyle='#2f5aa0';cx.beginPath();cx.ellipse(x+45,BASE-24-j*16,34-j*9,8,0,Math.PI,0);cx.fill();R(x+45-(26-j*8),BASE-24-j*16,52-j*16,10,'#b0303a')}R(x+44,BASE-80,3,10,'#e8b93a')});
+   if(d==='palace')one(520,x=>{R(x,BASE-40,90,40,'#d9cbb0');R(x+25,BASE-80,40,40,'#d9cbb0');R(x+33,BASE-110,24,30,'#d9cbb0');R(x+39,BASE-130,12,20,'#d9cbb0');R(x+44,BASE-150,2,20,'#d9cbb0')});
+   if(d==='goldengate')one(600,x=>{for(const c of[0,150]){R(x+c,BASE-110,8,110,'#c0392b');R(x+c-2,BASE-80,12,4,'#c0392b')}cx.strokeStyle='#c0392b';cx.lineWidth=2;cx.beginPath();cx.moveTo(x-60,BASE-30);cx.quadraticCurveTo(x+4,BASE-30,x+4,BASE-110);cx.quadraticCurveTo(x+79,BASE-20,x+154,BASE-110);cx.quadraticCurveTo(x+154,BASE-30,x+220,BASE-30);cx.stroke();R(x-60,BASE-26,280,4,'#c0392b')});
+   if(d==='seoultower')one(520,x=>{cx.fillStyle='#4f7a5a';cx.beginPath();cx.ellipse(x+12,BASE,60,30,0,Math.PI,0);cx.fill();R(x+10,BASE-110,5,82,'#e6e6e6');R(x+5,BASE-112,15,10,'#e6e6e6');R(x+12,BASE-130,1,18,'#e6e6e6')});
+   if(d==='duomo')one(520,x=>{R(x,BASE-60,120,60,'#efe7e0');for(let j=0;j<12;j++){R(x+2+j*10,BASE-78,3,18,'#efe7e0');tri(x+1+j*10,BASE-78,x+3.5+j*10,BASE-86,x+6+j*10,BASE-78,'#efe7e0')}tri(x,BASE-60,x+60,BASE-84,x+120,BASE-60,'#efe7e0');R(x+58,BASE-110,4,30,'#efe7e0');R(x+59,BASE-116,2,6,'#e8b93a');for(let j=0;j<5;j++)R(x+10+j*24,BASE-40,8,22,'#7a6a5a')});
+   if(d==='pagoda')one(480,x=>{for(let j=0;j<5;j++){const w=48-j*7,y=BASE-14-j*18;R(x+24-w/2+6,y,w-12,14,'#b0303a');R(x+24-w/2,y-4,w,4,'#3a2a2a')}R(x+23,BASE-110,2,16,'#3a2a2a')});
+   if(d==='torii')one(380,x=>{R(x,BASE-50,5,50,'#d9442b');R(x+40,BASE-50,5,50,'#d9442b');R(x-6,BASE-54,57,5,'#d9442b');R(x-2,BASE-44,49,3,'#d9442b')});
+  }},
+ atmo(o,S,kind){if(kind==='laser'){R(0,0,W,BASE,'#0b0f1a');for(let k=0;k<5;k++){const x=((k*90-o*0.4)%450+450)%450-40;R(x,BASE-60,50,60,'#1c2433');R(x+6,BASE-54,12,8,'#2f6a4a');R(x+22,BASE-54,20,4,'#ff4040')}
+   const lx=((220-o*0.6)%700+700)%700-100;cx.fillStyle='rgba(40,255,120,.22)';cx.fillRect(lx,20,6,BASE-20);R(lx+2,20,2,BASE-20,'rgba(120,255,170,.9)');cx.fillStyle='rgba(180,120,255,.18)';cx.fillRect(lx+60,20,4,BASE-20);
+   cx.fillStyle='#9fdcff';cx.font='7px Silkscreen, monospace';cx.fillText('532 nm laser sheet · OH-PLIF excitation ≈ 283 nm',12,40)}
+  else if(kind==='spectroscopy'){const cols=['#7a00ff','#3a3aff','#00a0ff','#00d07a','#c8e000','#ffb000','#ff4000'];for(let i=0;i<7;i++)R(0,10+i*22,W,22,cols[i]+'55');
+   const lines=[['OH* ~309 nm',30],['CH* ~431 nm',150],['C₂* ~516 nm',260]];cx.font='7px Silkscreen, monospace';for(const [t,x0] of lines){const x=((x0-o*0.3)%W+W)%W;R(x,10,2,154,'#ffffff');cx.fillStyle='#ffffff';cx.fillText(t,x+4,26)}}
+  else if(kind==='acoustics'){R(0,0,W,BASE,'#10141f');cx.strokeStyle='#4fb6ff';cx.lineWidth=1.5;cx.beginPath();for(let x=0;x<W;x+=2){const y=50+Math.sin((x+o+tick*3)/14)*14*Math.sin((x+o)/90);x?cx.lineTo(x,y):cx.moveTo(x,y)}cx.stroke();
+   for(let k=0;k<6;k++){const r=((tick*0.8+k*30)%180);cx.strokeStyle=`rgba(255,138,61,${1-r/180})`;cx.beginPath();cx.arc(W/2,BASE,r,Math.PI,0);cx.stroke()}cx.fillStyle='#9fdcff';cx.font='7px Silkscreen, monospace';cx.fillText('Thermoacoustics: heat release in phase with pressure',12,90)}},
+ generic(o,S){const sd=parseInt(S.n)||7;const rr=rng(sd*131);const b=[];let x=0;while(x<700){const w=16+Math.floor(rr()*26),h=24+Math.floor(rr()*80);b.push([x,w,h,rr()]);x+=w+3}
+  for(const [bx0,w,h,q] of b){const bx=((bx0-o*0.5)%700+700)%700-40;R(bx,BASE-h*0.6-20,w,h*0.6+20,S.far)}
+  for(const [bx0,w,h,q] of b){const bx=((bx0*1.3-o)%910+910)%910-60;R(bx,BASE-h,w,h,S.mid);if(q>0.6)tri(bx,BASE-h,bx+w/2,BASE-h-10,bx+w,BASE-h,S.mid);if(q<0.2){R(bx+w/2-1,BASE-h-14,2,14,S.mid)}for(let j=6;j<h-4;j+=9)for(let i2=4;i2<w-4;i2+=7)if(((i2+j+bx0)%3)!==0)R(bx+i2,BASE-h+j,3,4,'rgba(255,240,200,.55)')}},
+ pittsburgh(o,S){R(0,152,W,24,'#3a6a9a');
+  for(let k=0;k<4;k++){const bx=((k*130+40-o*0.5)%520+520)%520-60;R(bx,BASE-40,50,40,S.mid);for(let j=0;j<3;j++){R(bx+6+j*14,BASE-78,6,38,S.mid);const ph=(tick*0.3+j*20+k*13)%40;for(let s=0;s<3;s++){cx.fillStyle=`rgba(90,90,100,${0.5-s*0.13})`;cx.beginPath();cx.arc(bx+9+j*14+s*5+ph*0.2,BASE-84-s*9-ph*0.3,5+s*2,0,7);cx.fill()}}R(bx+4,BASE-12,42,4,'rgba(255,150,60,.85)')}
+  const by=((220-o*0.7)%520+520)%520-140;R(by,146,140,4,'#e5b53a');for(let i=0;i<10;i++){cx.strokeStyle='#e5b53a';cx.lineWidth=2;cx.beginPath();cx.moveTo(by+i*14,146);cx.lineTo(by+i*14+7,130+Math.abs(5-i)*2);cx.lineTo(by+i*14+14,146);cx.stroke()}R(by+10,150,4,26,'#e5b53a');R(by+126,150,4,26,'#e5b53a');
+  const cl=((90-o)%430+430)%430-50;R(cl,BASE-90,40,90,'#d9c9a6');R(cl+5,BASE-118,30,28,'#d9c9a6');R(cl+10,BASE-136,20,18,'#d9c9a6');R(cl+14,BASE-148,12,12,'#d9c9a6');for(let i=0;i<4;i++)R(cl+6+i*8,BASE-110,2,100,'#bfae8a')}
+};
+const draw=()=>{const S=SYMP[lvl];const g=cx.createLinearGradient(0,0,0,BASE);g.addColorStop(0,S.sky[0]);g.addColorStop(1,S.sky[1]);cx.fillStyle=g;cx.fillRect(0,0,W,H);
+ cx.fillStyle='rgba(255,255,255,.85)';cx.beginPath();cx.arc(W-60,40,12,0,7);cx.fill();
+ for(let i=0;i<4;i++){const x=((i*130-cam*0.08)%(W+80)+W+80)%(W+80)-40;cx.fillStyle='rgba(255,255,255,.55)';cx.beginPath();cx.ellipse(x,30+i*12,22,6,0,0,7);cx.fill()}
+ if(ATMO[lvl])CITY.atmo(cam*0.35,S,ATMO[lvl]);else{CITY[S.city](cam*0.35,S);if(DECO[lvl])CITY.deco(cam*0.35,S,DECO[lvl])}
+ const t0=Math.floor(cam/TS),t1=Math.min(cols-1,t0+W/TS+1);
+ for(let tx=t0;tx<=t1;tx++)for(let ty=0;ty<ROWS;ty++){const v=map[tx][ty];if(!v)continue;const px=tx*TS-cam|0;let py=ty*TS;const b=bumps.find(q=>q.x===tx&&q.y===ty);if(b)py-=Math.sin(b.t/10*Math.PI)*4;
+  if(v===1){const top=ty===0||!solid(tx,ty-1);R(px,py,TS,TS,'#3b2f44');R(px+2,py+6,4,3,'#4b3d56');R(px+10,py+11,3,2,'#4b3d56');if(top){R(px,py,TS,4,S.acc);R(px,py,TS,1,'rgba(255,255,255,.35)')}}
+  else if(v===2){R(px,py,TS,TS,'#7a4430');R(px+1,py+1,6,6,'#a0603f');R(px+9,py+1,6,6,'#a0603f');R(px+5,py+9,6,6,'#a0603f');R(px,py+15,TS,1,'#2a140c')}
+  else if(v===3){const f=Math.floor(tick/12)%4===0;R(px,py,TS,TS,'#2a1a04');R(px+1,py+1,14,14,f?'#ffd86b':'#ffc23d');R(px+1,py+14,14,1,'#b5770a');[[6,3,4],[5,4,1],[10,4,1],[5,5,1],[10,5,1],[9,6,1],[8,7,1],[7,8,2],[7,9,2],[7,11,2],[7,12,2]].forEach(([a,c,w])=>R(px+a,py+c,w,1,'#2a1a04'))}
+  else if(v===4){R(px,py,TS,TS,'#3a3340');R(px+1,py+1,14,14,'#6a6372');R(px+3,py+3,2,2,'#3a3340');R(px+11,py+3,2,2,'#3a3340');R(px+3,py+11,2,2,'#3a3340');R(px+11,py+11,2,2,'#3a3340')}}
+ for(const b of bumps)b.t--;while(bumps.length&&bumps[0].t<=0)bumps.shift();
+ /* items rising from boxes */
+ for(const p of pops){const px=p.x-cam,py=p.y-(40-p.t)*0.7;if(p.k==='o2'){cx.fillStyle='#ff5a5a';cx.beginPath();cx.arc(px-4,py,4,0,7);cx.arc(px+4,py,4,0,7);cx.fill();R(px-4,py-1,8,2,'#ffffff')}else if(p.k==='air'){cx.fillStyle='#ffffff';cx.beginPath();cx.ellipse(px,py,9,5,0,0,7);cx.fill();cx.fillStyle='#4fb6ff';cx.beginPath();cx.arc(px-3,py,2,0,7);cx.arc(px+3,py,2,0,7);cx.fill()}else{R(px-3,py-12,6,6,'#ffc23d')}p.t--}while(pops.length&&pops[0].t<=0)pops.shift();
+ /* goal: a Pantheon-style temple of combustion, with symposium and city on the entablature */
+ const gx=goalX-cam|0,gy=GROUND*TS;if(gx<W+120){const st='#efe7d3',sh='#cdbf9f',dk='#9c8d6c',top=gy-64;
+  cx.fillStyle=sh;cx.beginPath();cx.ellipse(gx+48,top,40,34,0,Math.PI,0);cx.fill();R(gx+8,top,80,20,sh);cx.fillStyle=st;cx.beginPath();cx.ellipse(gx+48,top-2,36,30,0,Math.PI,0);cx.fill();
+  for(let i=1;i<5;i++){cx.strokeStyle='rgba(156,141,108,.6)';cx.lineWidth=1;cx.beginPath();cx.ellipse(gx+48,top-2,36,30-i*6,0,Math.PI,0);cx.stroke()}
+  const fl=Math.sin(tick/5),oc=top-31;cx.fillStyle='#ff8a3d';cx.beginPath();cx.moveTo(gx+42,oc);cx.quadraticCurveTo(gx+48,oc-15-fl*3,gx+54,oc);cx.fill();cx.fillStyle='#ffd85a';cx.beginPath();cx.moveTo(gx+45,oc);cx.quadraticCurveTo(gx+48,oc-9-fl*2,gx+51,oc);cx.fill();R(gx+42,oc-1,12,2,dk);
+  R(gx-6,gy-6,108,6,sh);R(gx-2,gy-11,100,5,st);R(gx+2,gy-15,92,4,sh);
+  for(let i=0;i<8;i++){const c0=gx+5+i*11.5;R(c0,gy-45,6,30,st);R(c0+1,gy-45,1,30,'#fffaf0');R(c0+4,gy-45,1,30,dk);R(c0-1,gy-48,8,3,sh);R(c0-1,gy-16,8,2,sh)}
+  R(gx-2,top,100,16,st);R(gx-2,top+8,100,1,sh);R(gx-2,top+16,100,1,dk);
+  tri(gx-5,top,gx+48,top-20,gx+101,top,st);tri(gx+6,top-2,gx+48,top-16,gx+90,top-2,sh);
+  const city=(S.place.split(',')[0]||S.place).toUpperCase();cx.textAlign='center';cx.fillStyle='#4a3a20';
+  cx.font='7px Silkscreen, monospace';cx.fillText(S.n.toUpperCase()+' SYMPOSIUM '+S.y,gx+48,top+7);
+  cx.font=(city.length>13?'5':'6')+'px Silkscreen, monospace';cx.fillText(city,gx+48,top+15);cx.textAlign='start'}
+ /* clouds and falling questions */
+ for(const f of sootF){cx.fillStyle='#2a2a30';cx.beginPath();cx.arc(f.x-cam,f.y,3,0,7);cx.fill()}
+ for(const c of clouds){if(!c.spray||c.st!=='follow')continue;for(let k=0;k<6;k++){const a=k*0.5+tick*0.1;R(c.x-cam-12+Math.cos(a)*14,c.y+12+((tick*2+k*9)%22),2,2,'rgba(80,160,255,.8)')}}
+ for(const c of clouds){if(c.st==='wait'||c.st==='done')continue;const x=c.x-cam;cx.fillStyle='#ffffff';cx.beginPath();cx.ellipse(x,c.y,16,8,0,0,7);cx.ellipse(x-10,c.y+3,9,6,0,0,7);cx.ellipse(x+11,c.y+3,9,6,0,0,7);cx.ellipse(x+2,c.y-6,9,7,0,0,7);cx.fill();R(x-5,c.y-1,2,3,'#2a2a3a');R(x+3,c.y-1,2,3,'#2a2a3a');R(x-2,c.y+4,4,1,'#2a2a3a');
+  R(x+15,c.y-12,3,12,'#ffffff');R(x+16,c.y-6,1,6,'#e2452b');cx.fillStyle='#e2452b';cx.beginPath();cx.arc(x+16.5,c.y+1,2.5,0,7);cx.fill()}
+ for(const k of caps){const x=k.x-cam,y=k.y,gl=0.5+0.5*Math.sin(tick/6);cx.fillStyle=`rgba(255,194,61,${0.25+0.25*gl})`;cx.beginPath();cx.arc(x,y,9,0,7);cx.fill();cx.fillStyle='#ffc23d';cx.beginPath();cx.arc(x,y,6,0,7);cx.fill();cx.fillStyle='#2a1a04';cx.font='8px Silkscreen, monospace';cx.textAlign='center';cx.fillText('?',x,y+3);cx.textAlign='start'}
+ /* enemies with their names */
+ cx.font='7px Silkscreen, monospace';cx.textAlign='center';
+ for(const e of ents)if(e.alive){const ex=e.x-cam|0;if(ex>-30&&ex<W+30){R(ex+1,e.y+10,10,2,'rgba(0,0,0,.25)');if(e.knock&&e.kt>170){const g=(e.kt-170)/90;cx.fillStyle=`rgba(255,${Math.round(140-100*g)},40,${0.35+0.4*g})`;cx.beginPath();cx.arc(ex+6,e.y+5,9+4*g+Math.sin(tick)*1.5,0,7);cx.fill()}cx.drawImage(FOESP[lvl][Math.floor(tick/10)%2],ex,e.y|0);if(e.knock&&e.kt>200){cx.fillStyle='#ff8a3d';cx.fillText('KNOCK',ex+6,e.y-11)}cx.lineWidth=3;cx.strokeStyle='rgba(0,0,0,.7)';cx.strokeText(S.foe,ex+6,e.y-2);cx.fillStyle='#ffffff';cx.fillText(S.foe,ex+6,e.y-2)}}
+ for(const p of puffs){cx.fillStyle=`rgba(123,224,138,${p.t/18})`;R(p.x-cam-(18-p.t),p.y-(18-p.t)/2,3,3,cx.fillStyle);R(p.x-cam+(18-p.t),p.y-(18-p.t)/2,3,3,cx.fillStyle);p.t--}while(puffs.length&&puffs[0].t<=0)puffs.shift();
+ for(const t of toasts){cx.globalAlpha=Math.min(1,t.life/20);cx.lineWidth=3;cx.strokeStyle='rgba(0,0,0,.75)';cx.strokeText(t.t,t.x-cam+8,t.y-(60-t.life)*0.4);cx.fillStyle=t.c;cx.fillText(t.t,t.x-cam+8,t.y-(60-t.life)*0.4);cx.globalAlpha=1;t.life--}while(toasts.length&&toasts[0].life<=0)toasts.shift();
+ cx.textAlign='start';
+ /* hero */
+ if(!(P.inv>0&&Math.floor(tick/4)%2)){const F=boost>0?HEROES[hero].hot:coolT>0?HEROES[hero].cool:HEROES[hero].f;const fr=!P.on?F.jump:Math.abs(P.vx)>0.4?(Math.floor(tick/7)%2?F.w1:F.w2):F.idle;const hx=P.x-1-cam|0,hy=P.y-1|0;
+  if(boost>0){const a=0.55+0.25*Math.sin(tick/3),fade=boost<90&&Math.floor(tick/5)%2;if(!fade){cx.fillStyle=`rgba(159,220,255,${a*0.35})`;cx.fillRect(hx-3,hy-3,18,22);cx.strokeStyle=`rgba(220,245,255,${a})`;cx.lineWidth=1;cx.strokeRect(hx-3.5,hy-3.5,19,23)}}
+  cx.save();if(P.face<0){cx.translate(hx+12,hy);cx.scale(-1,1);cx.drawImage(fr,0,0)}else cx.drawImage(fr,hx,hy);cx.restore()}};
+
+/* ---------- HUD and loop ---------- */
+const hud=()=>{document.getElementById('hsc').textContent=score;document.getElementById('hcc').textContent=`CO₂ ${carbon}`;document.getElementById('hlife').textContent='♥'.repeat(Math.max(0,lives))+'♡'.repeat(Math.max(0,3-lives))};
+let last=0,accum=0;
+const loop=t=>{if(!last)last=t;accum+=Math.min(100,t-last);last=t;while(accum>=1000/60){if(!paused)update();accum-=1000/60}draw();requestAnimationFrame(loop)};
+
+/* ---------- quiz: the card flies out of the box ---------- */
+const ovQ=document.getElementById('ovQ'),qcard=document.getElementById('qcard'),qtext=document.getElementById('qtext'),qopts=document.getElementById('qopts'),qexp=document.getElementById('qexp'),qnext=document.getElementById('qnext'),qtag=document.getElementById('qtag');
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+let qDone=null,curOpts=[];
+const TL={c:'Combustion',n:'Numbers',k:'Climate'};
+const thermo=document.getElementById('thermo'),tfill=document.getElementById('tfill'),tval=document.getElementById('tval');let timer=null,tLeft=0,tMax=0,curQ=null;
+const stopTimer=()=>{if(timer){clearInterval(timer);timer=null}};
+const setThermo=f=>{const T=1.1+0.9*f;tfill.style.width=(f*100).toFixed(1)+'%';tval.textContent=`+${T.toFixed(2)} °C`;const c=f<0.44?'#4fb6ff':f<0.75?'#ffb03d':'#ff4d4d';thermo.style.setProperty('--tc',c)};
+const ask=(gate,cb,fx,fy,timed)=>{paused=true;keys.L=keys.R=keys.J=false;const Q=nextQ();curQ=Q;lvlAsked++;stopTimer();
+ qtag.textContent=(timed?'Cloud question · timed · ':'')+(gate?'Symposium gate · ':'')+TL[Q.t]+' · '+(Q.d===2?'graduate':'undergraduate');
+ thermo.classList.toggle('on',!!timed);if(timed){tMax=mode==='gr'?20:25;tLeft=tMax;setThermo(0);const t0=Date.now();timer=setInterval(()=>{tLeft=Math.max(0,tMax-(Date.now()-t0)/1000);setThermo(1-tLeft/tMax);if(tLeft<=0){stopTimer();timeUp()}},100)}qtext.textContent=Q.q;
+ curOpts=shuffle(Q.a.map((t,i)=>({t,ok:i===0})));
+ qopts.innerHTML=curOpts.map((o,i)=>`<button type="button" data-i="${i}"><span class="n">${i+1}</span>${o.t}</button>`).join('');
+ qexp.className='exp';qexp.textContent='';qnext.hidden=true;ovQ.classList.add('on');
+ if(!reduce){const sr=document.getElementById('screen').getBoundingClientRect(),cr=qcard.getBoundingClientRect();
+  const tx=(fx==null?0.5:fx)*sr.width+sr.left-(cr.left+cr.width/2),ty=(fy==null?0.6:fy)*sr.height+sr.top-(cr.top+cr.height/2);
+  qcard.style.transition='none';qcard.style.transform=`translate(${tx}px,${ty}px) scale(.04) rotate(-8deg)`;qcard.style.opacity='0.3';qcard.offsetWidth;
+  qcard.style.transition='transform .5s cubic-bezier(.2,1.25,.4,1),opacity .3s';qcard.style.transform='none';qcard.style.opacity='1'}
+ setTimeout(()=>qopts.querySelector('button')?.focus(),reduce?0:500);
+ qDone=cb||(()=>{paused=false});
+ for(const b of qopts.querySelectorAll('button'))b.onclick=()=>answer(+b.dataset.i,Q)};
+const timeUp=()=>{if(!qnext.hidden)return;qopts.querySelectorAll('button').forEach((b,k)=>{b.disabled=true;if(curOpts[k].ok)b.classList.add('ok')});qexp.innerHTML='<b style="color:var(--bad)">Time is up. The thermometer reached +2.0 °C.</b> ';qexp.append(curQ.e);qexp.classList.add('on');qLog.push({ok:false});qnext.hidden=false;qnext.focus()};
+const answer=(i,Q)=>{if(!qnext.hidden)return;const timed=!!timer;stopTimer();const right=curOpts[i].ok;const bonus=timed&&right?Math.round(60*tLeft/tMax):0;if(bonus)score+=bonus;
+ qopts.querySelectorAll('button').forEach((b,k)=>{b.disabled=true;if(curOpts[k].ok)b.classList.add('ok');else if(k===i)b.classList.add('no')});
+ if(right){score+=100;lvlRight++;boost=180}
+ qexp.innerHTML=`<b style="color:${right?'var(--ok)':'var(--bad)'}">${right?'Correct. +100'+(bonus?` and +${bonus} for speed, the planet stayed cooler`:''):'Not quite.'}</b> `;qexp.append(Q.e);qexp.classList.add('on');
+ qLog.push({ok:right});qnext.hidden=false;qnext.focus();hud()};
+qnext.onclick=()=>{ovQ.classList.remove('on');const f=qDone;qDone=null;f&&f()};
+
+/* ---------- leaderboard ---------- */
+const me=store.get('symprun-me',{u:''});
+const devToken=()=>{let t=store.get('symprun-token','');if(!t){const a=new Uint8Array(16);if(window.crypto&&crypto.getRandomValues)crypto.getRandomValues(a);else a.forEach((_,i)=>a[i]=Math.random()*256);t=[...a].map(b=>b.toString(16).padStart(2,'0')).join('');store.set('symprun-token',t)}return t};
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const localBoard=()=>store.get('symprun-board',[]);
+const getBoard=async()=>{if(!API)return{rows:localBoard(),online:false};try{const r=await fetch(API+'?t='+Date.now());const j=await r.json();return{rows:j.top||[],online:true}}catch(e){return{rows:localBoard(),online:false,err:true}}};
+const boardHTML=(b)=>`<table class="lb"><thead><tr><th>#</th><th>Player</th><th class="r">Score</th><th class="r">Badges</th></tr></thead><tbody>${b.rows.length?b.rows.slice(0,20).map((r,i)=>`<tr class="${me.u&&r.username===me.u?'me':''}"><td>${i+1}</td><td>${esc(r.username)}</td><td class="r">${r.score}</td><td class="r">${r.badges||0}</td></tr>`).join(''):'<tr><td colspan="4" style="color:var(--mute)">No scores yet. Be the first.</td></tr>'}</tbody></table><p style="color:var(--mute);font-size:13px">${b.online?'Online leaderboard. Only usernames are shown.':'The online leaderboard opens soon. For now, these are the scores saved on this device.'}</p>`;
+const saveForm=()=>`<div class="save" id="saveBox"><span class="k">Save your score to the leaderboard</span>
+ <label for="lbU">Username (shown publicly, 3–24 characters)<input type="text" id="lbU" maxlength="24" autocomplete="nickname" value="${esc(me.u)}"></label>
+ <p style="margin:0;color:var(--mute);font-size:14px">No email needed. Please do not use your real full name. A random code kept on this device protects your username.</p>
+ <label class="chk"><input type="checkbox" id="lbC"> I agree that my username and score appear on the public leaderboard (<a href="privacy.html" style="color:var(--am)">privacy notice</a>)</label>
+ <div class="row" style="margin-top:0"><button class="btn" id="lbSave" type="button">Save score ${score}</button></div><p class="msg" id="lbMsg" role="status"></p></div>`;
+const bindSave=()=>{const b=document.getElementById('lbSave');if(!b)return;b.onclick=async()=>{const u=document.getElementById('lbU').value.trim(),msg=document.getElementById('lbMsg');
+ if(!/^[\p{L}\p{N}_.\- ]{3,24}$/u.test(u)){msg.textContent='Choose a username of 3 to 24 letters or numbers.';return}
+ if(!document.getElementById('lbC').checked){msg.textContent='Please tick the consent box to save your score.';return}
+ me.u=u;store.set('symprun-me',me);const badges=((save&&save.badges)||[]).length;
+ const lb=localBoard().filter(r=>r.username!==u||r.score>score);if(!lb.some(r=>r.username===u))lb.push({username:u,score,badges});lb.sort((a,b)=>b.score-a.score);store.set('symprun-board',lb.slice(0,50));
+ if(API){msg.textContent='Saving…';try{const r=await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({type:'score',username:u,token:devToken(),score,badges,mode})});const j=await r.json();
+   if(j.ok){msg.textContent='Saved. You are on the leaderboard.';runSaved=true;b.disabled=true}else msg.textContent=j.error==='taken'?'That username is already taken. Please choose another.':'Could not save. Please try again.'}catch(e){msg.textContent='Could not reach the leaderboard. Your score is saved on this device.'}}
+ else{msg.textContent='Saved on this device. The online leaderboard opens soon.';runSaved=true;b.disabled=true}}};
+const showBoard=async(back)=>{showCard(`<span class="k">Leaderboard</span><h2>Top players</h2><p style="color:var(--mute)">Loading…</p>`);const b=await getBoard();
+ showCard(`<span class="k">Leaderboard</span><h2>Top players</h2>${boardHTML(b)}<div class="row"><button class="btn main" id="lbBack" type="button">Back</button></div>`,()=>document.getElementById('lbBack').onclick=()=>{hideCard();back&&back()})};
+
+/* ---------- cards ---------- */
+const ovCard=document.getElementById('ovCard'),cardBody=document.getElementById('cardBody');
+const showCard=(html,after)=>{cardBody.innerHTML=html;ovCard.classList.add('on');after&&after();const b=cardBody.querySelector('.btn.main');b&&b.focus()};
+const hideCard=()=>ovCard.classList.remove('on');
+const medal=c=>`<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M12 2h6l3 10h-6zM22 2h6l-3 10h-6z" fill="#c9a6ff"/><circle cx="20" cy="25" r="12" fill="${c}"/><circle cx="20" cy="25" r="8" fill="none" stroke="#1a1a1a" stroke-width="2"/><path d="M20 19c2 3 4 4 4 7a4 4 0 0 1-8 0c0-3 2-4 4-7z" fill="#1a1a1a"/></svg>`;
+const intro=i=>{const S=SYMP[i],E=ERAS[eraOf(i)];paused=true;showCard(`${i===E.from?`<div class="climate" style="background:#1c1a10;border-color:#4b3d10;color:#f3e6c4;margin:0 0 12px"><b>Era ${eraOf(i)+1}: ${E.name}</b> · ${E.years}<br>${E.how}</div>`:''}<span class="k">${S.n} International Symposium on Combustion · ${S.date}</span><h2>${S.place}</h2><p>The emissions here are <b style="color:var(--leaf)">${S.foe}</b>. Stomp them from above to capture their carbon. Watch the sky: the question cloud drops timed questions, and a warming thermometer is the clock.</p><div class="climate">${S.note}</div>${ATMO[i]?`<div class="climate" style="background:#101a2e;border-color:#2b3f8a;color:#d8e6ff">Special stage: ${{laser:'Laser diagnostics lab. Laser sheets light up the flame: PLIF, PIV and Raman are how researchers see inside flames.',spectroscopy:'Combustion spectroscopy. Excited radicals glow at their own wavelengths: OH* near 309 nm, CH* near 431 nm, C₂* near 516 nm.',acoustics:'Combustion acoustics. When heat release and pressure oscillate in phase, flames can roar and shake an engine.'}[ATMO[i]]}</div>`:''}<div class="row"><button class="btn main" id="go" type="button">Start</button></div>`,()=>document.getElementById('go').onclick=()=>{hideCard();paused=false})};
+const finale=()=>{ask(true,()=>ask(true,levelDone),0.85,0.55)};
+const levelDone=()=>{const S=SYMP[lvl],need=Math.max(1,Math.ceil(lvlAsked*0.6)),got=lvlAsked>0&&lvlRight>=need;const badges=(save&&save.badges)||[];if(got&&!badges.includes(S.badge))badges.push(S.badge);
+ save={lvl:Math.min(lvl+1,LAST),score,hero,mode,badges,carbon};store.set('symprun',save);
+ const last=lvl===LAST;
+ showCard(`<span class="k">Symposium complete</span><h2>${S.n} International Symposium on Combustion</h2>
+  <dl class="fact"><dt>Place</dt><dd>${S.place}</dd><dt>Date</dt><dd>${S.date}</dd><dt>Chair</dt><dd>${S.chair}</dd><dt>Your answers</dt><dd>${lvlRight} of ${lvlAsked} correct</dd><dt>Carbon captured</dt><dd>${carbon} emission units so far</dd>${eraOf(lvl)===1?`<dt>Longest chain</dt><dd>${maxChain} radicals</dd>`:''}${eraOf(lvl)===3?`<dt>Fuel drops</dt><dd>${dropsGot} collected</dd>`:''}${eraOf(lvl)===7?`<dt>Clean fuels</dt><dd>${clean} collected, ${fossil} fossil touched</dd>`:''}</dl>
+  ${got?`<div class="badge">${medal(S.acc)}<div><b>Badge earned: ${S.badge}</b><br><span style="color:var(--mute);font-size:14px">A game badge for answering most questions right.</span></div></div>`:`<p style="color:var(--mute)">Answer at least ${need} of ${lvlAsked} questions correctly to earn the ${S.badge} badge.</p>`}
+  ${BOOKS[lvl]?`<div class="badge" style="background:#101a2e;border-color:#2b3f8a;align-items:flex-start"><svg viewBox="0 0 40 40" aria-hidden="true"><rect x="6" y="5" width="26" height="31" rx="2" fill="#4fb6ff"/><rect x="9" y="5" width="3" height="31" fill="#2f7fd6"/><rect x="15" y="11" width="13" height="3" fill="#0b2340"/><rect x="15" y="17" width="10" height="2" fill="#0b2340"/></svg><div><span class="k" style="color:#9fdcff">Book of the symposium</span><br><b>${BOOKS[lvl].t}</b><br><span style="font-size:14px;color:#cfd3dd">${BOOKS[lvl].a} · ${BOOKS[lvl].p}</span><p style="margin:6px 0 0;font-size:14.5px">${BOOKS[lvl].w}</p></div></div>`:''}
+  <div class="row"><button class="btn main" id="nx" type="button">${last?'See the results':'Travel to the '+SYMP[lvl+1].n+' Symposium ('+SYMP[lvl+1].y+')'}</button><button class="btn" id="rp" type="button">Replay this symposium</button></div>`,()=>{
+  document.getElementById('nx').onclick=()=>{hideCard();if(last)endGame();else{lvl++;genLevel(lvl);intro(lvl)}};
+  document.getElementById('rp').onclick=()=>{hideCard();genLevel(lvl);intro(lvl)}})};
+const endGame=()=>{const ok=qLog.filter(q=>q.ok).length,b=(save&&save.badges)||[];
+ showCard(`<span class="k">Journey complete · Swampscott 1928 to Brazil</span><h2>All 42 symposia and 8 eras finished</h2><p>Score <b style="color:var(--am)">${score}</b> · ${ok} of ${qLog.length} questions right · <span style="color:var(--leaf)">${carbon} emissions captured</span></p>
+  ${b.length?`<p class="k" style="margin-top:12px">Your badges</p>${b.map(x=>`<div class="badge">${medal('#ffc23d')}<b>${x}</b></div>`).join('')}`:''}
+  <div class="climate">Every flame in this game asks the same question as real combustion research today: how do we keep the energy and lose the carbon? Hydrogen, ammonia, biofuels, efficiency and carbon capture are all parts of the answer.</div>
+  <p style="margin-top:12px">The real awards of the combustion community, such as the Bernard Lewis Gold Medal named after the chair of the 2nd and 3rd Symposia, are given by The Combustion Institute for lifetime contributions to the field.</p>
+  ${saveForm()}
+  <p style="font-size:14px;color:var(--mute)">Want the fortnightly Flame Front letter with a new combustion code? <a href="index.html#join" style="color:var(--am)">Join on the main page</a>.</p>
+  <div class="row"><button class="btn main" id="ag" type="button">Play again with new questions</button><button class="btn" id="eb" type="button">Leaderboard</button></div>
+  <p style="color:var(--mute);font-size:14px">From thermochemistry to the energy transition: thank you for travelling through almost a century of combustion science.</p>`,()=>{bindSave();document.getElementById('ag').onclick=()=>{hideCard();startRun(0)};document.getElementById('eb').onclick=()=>showBoard(endGame)})};
+
+/* ---------- title screen ---------- */
+const pick=document.getElementById('pick');
+pick.innerHTML=Object.entries(HEROES).map(([k,h])=>`<button type="button" class="btn" data-h="${k}" aria-pressed="${k===hero}"><canvas width="12" height="16" data-p="${k}"></canvas><b>${h.name}</b><span style="color:var(--mute);font-weight:400;font-size:14px">${h.desc}</span></button>`).join('');
+pick.querySelectorAll('canvas').forEach(c=>c.getContext('2d').drawImage(HEROES[c.dataset.p].f.idle,0,0));
+pick.querySelectorAll('button').forEach(b=>b.onclick=()=>{hero=b.dataset.h;pick.querySelectorAll('button').forEach(o=>o.setAttribute('aria-pressed',String(o===b)))});
+document.querySelectorAll('#mode button').forEach(b=>b.onclick=()=>{mode=b.dataset.m;document.querySelectorAll('#mode button').forEach(o=>o.setAttribute('aria-pressed',String(o===b)))});
+const startRun=(from,keep)=>{runSeed=(Date.now()+Math.floor(Math.random()*1e6))%2147483647;queues=null;lvl=from;if(!keep){score=0;qLog=[];carbon=0}lives=3;runSaved=false;genLevel(lvl);document.getElementById('ovTitle').classList.remove('on');hud();intro(lvl)};
+document.getElementById('start').onclick=()=>{save={lvl:0,score:0,hero,mode,badges:(save&&save.badges)||[],carbon:0};startRun(0)};
+const contB=document.getElementById('cont');
+if(save&&save.lvl>0){contB.hidden=false;contB.textContent=`Continue: ${SYMP[save.lvl].n} Symposium (${SYMP[save.lvl].y})`;contB.onclick=()=>{hero=save.hero||hero;mode=save.mode||mode;score=save.score||0;carbon=save.carbon||0;startRun(save.lvl,true)}}
+const title=document.getElementById('ovTitle');
+document.getElementById('lbBtn').onclick=()=>{title.classList.remove('on');showBoard(()=>title.classList.add('on'))};
+
+/* ---------- input ---------- */
+const km={ArrowLeft:'L',KeyA:'L',ArrowRight:'R',KeyD:'R',ArrowUp:'J',KeyW:'J',Space:'J'};
+addEventListener('keydown',e=>{if(ovQ.classList.contains('on')){const n=parseInt(e.key,10);if(n>=1&&n<=4&&qnext.hidden){const b=qopts.querySelectorAll('button')[n-1];b&&b.click();e.preventDefault()}return}
+ const k=km[e.code];if(k&&!paused&&!(e.target&&e.target.tagName==='INPUT')){keys[k]=true;e.preventDefault()}});
+addEventListener('keyup',e=>{const k=km[e.code];if(k)keys[k]=false});
+document.querySelectorAll('#pad button').forEach(b=>{const k=b.dataset.k;const on=e=>{e.preventDefault();keys[k]=true},off=e=>{e.preventDefault();keys[k]=false};b.addEventListener('pointerdown',on);b.addEventListener('pointerup',off);b.addEventListener('pointerleave',off);b.addEventListener('pointercancel',off)});
+
+/* ---------- optional lo-fi soundtrack, generated live (no audio files) ---------- */
+const Music={ctx:null,timer:null,step:0,
+ start(){const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return false;if(!this.ctx){this.ctx=new AC();this.master=this.ctx.createGain();const lp=this.ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1600;this.master.connect(lp);lp.connect(this.ctx.destination)}
+  this.ctx.resume();this.master.gain.cancelScheduledValues(this.ctx.currentTime);this.master.gain.setValueAtTime(0.0001,this.ctx.currentTime);this.master.gain.exponentialRampToValueAtTime(0.14,this.ctx.currentTime+1.5);
+  this.next=this.ctx.currentTime+0.1;this.step=0;clearInterval(this.timer);this.timer=setInterval(()=>this.sched(),100);return true},
+ stop(){clearInterval(this.timer);this.timer=null;if(this.ctx)this.master.gain.setTargetAtTime(0.0001,this.ctx.currentTime,0.15)},
+ tone(f,t,d,type,v){const c=this.ctx,o=c.createOscillator(),g=c.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(v,t+0.03);g.gain.exponentialRampToValueAtTime(0.0001,t+d);o.connect(g);g.connect(this.master);o.start(t);o.stop(t+d+0.05)},
+ kick(t){const c=this.ctx,o=c.createOscillator(),g=c.createGain();o.frequency.setValueAtTime(120,t);o.frequency.exponentialRampToValueAtTime(45,t+0.15);g.gain.setValueAtTime(0.5,t);g.gain.exponentialRampToValueAtTime(0.0001,t+0.25);o.connect(g);g.connect(this.master);o.start(t);o.stop(t+0.3)},
+ hiss(t,d,v,hp){const c=this.ctx,b=c.createBuffer(1,Math.floor(c.sampleRate*d),c.sampleRate),ch=b.getChannelData(0);for(let i=0;i<ch.length;i++)ch[i]=(Math.random()*2-1)*(1-i/ch.length);const src=c.createBufferSource();src.buffer=b;const f=c.createBiquadFilter();f.type=hp?'highpass':'bandpass';f.frequency.value=hp?7000:1800;const g=c.createGain();g.gain.value=v;src.connect(f);f.connect(g);g.connect(this.master);src.start(t)},
+ sched(){const e=60/74/2,CH=[[261.63,329.63,392.0,493.88],[220.0,261.63,329.63,392.0],[174.61,220.0,261.63,329.63],[196.0,246.94,293.66,349.23]],PENT=[523.25,587.33,659.25,783.99,880.0];
+  while(this.next<this.ctx.currentTime+0.5){const t=this.next,st=this.step%8,bar=Math.floor(this.step/8)%4,sw=st%2?e*0.12:0;
+   if(st===0){CH[bar].forEach(f=>this.tone(f,t,e*8,'triangle',0.035));this.tone(CH[bar][0]/2,t,e*3,'sine',0.12)}
+   if(st===4)this.tone(CH[bar][0]/2,t,e*3,'sine',0.09);
+   if(st===0||st===5)this.kick(t);if(st===4)this.hiss(t,0.12,0.12,false);if(st%2===1)this.hiss(t+sw,0.04,0.05,true);
+   if((this.step*7+bar)%5<2&&st!==0)this.tone(PENT[(this.step*3+bar)%5],t+sw,e*1.6,'sine',0.04);
+   this.next+=e;this.step++}}};
+const musB=document.getElementById('mus');
+const setMus=on=>{const ok=on?Music.start():(Music.stop(),true);const real=on&&ok;musB.textContent=real?'♪ Music on':'♪ Music off';musB.setAttribute('aria-pressed',String(real));store.set('symprun-music',real)};
+musB.onclick=()=>setMus(musB.getAttribute('aria-pressed')!=='true');
+if(store.get('symprun-music',false)){const once=()=>{setMus(true);removeEventListener('pointerdown',once);removeEventListener('keydown',once)};addEventListener('pointerdown',once);addEventListener('keydown',once)}
+addEventListener('visibilitychange',()=>{if(!Music.ctx)return;if(document.hidden)Music.ctx.suspend();else if(musB.getAttribute('aria-pressed')==='true')Music.ctx.resume()});
+
+genLevel(0);hud();requestAnimationFrame(loop);
+}
+</script>
+</body>
+</html>
