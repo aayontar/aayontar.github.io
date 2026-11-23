@@ -166,7 +166,7 @@ const ERAS=[
  {name:"Laminar flames",from:11,to:16,mech:"chase",years:"1968–1978",how:"Outrun the flame front. It advances at the laminar burning velocity of each symposium's mixture, from slow ammonia to fast hydrogen."},
  {name:"Droplets and sprays",from:17,to:22,mech:"droplet",years:"1980–1990",how:"You are a burning droplet. By the d²-law your diameter squared shrinks at a steady rate: collect fuel drops to keep burning until the gate."},
  {name:"Turbulent combustion",from:23,to:28,mech:"eddy",years:"1992–2002",how:"Turbulent eddies push you around. Ride them: turbulence wrinkles flames and makes them burn faster."},
- {name:"Pollutants and soot",from:29,to:34,mech:"boss",years:"2004–2014",how:"A giant NOx guards each symposium gate. Stomp it three times to clean the exhaust."},
+ {name:"Pollutants and soot",from:29,to:34,mech:"boss",years:"2004–2014",how:"Pollutants everywhere. At the first gate of the era a giant NOx waits: stomp it three times. At the last gate a giant soot particle waits: stomping cannot break it, only oxygen burns soot, so grab O₂ and hit it with the shield."},
  {name:"Detonation and propulsion",from:35,to:38,mech:"shock",years:"2016–2022",how:"A detonation wave chases you at supersonic pace. Keep running and do not let the shock catch you."},
  {name:"Energy transition",from:39,to:41,mech:"fuel",years:"2024 onward",how:"Collect clean fuels (H₂, NH₃, e-fuels, biofuels) and avoid fossil coal and oil. The journey ends in Brazil."}];
 const BOOKS={
@@ -447,7 +447,7 @@ const genLevel=i=>{const r=rng(runSeed+i*7919+1);const len=Math.min(150,104+(i%5
  if(Ei===4){for(let tx=16;tx<len-20;tx+=12+Math.floor(r()*7))eddies.push({x:tx*TS,y:70+r()*60,r:34+r()*18,d:r()<0.5?-1:1})}
  if(Ei===7){const G=['H₂','NH₃','e-fuel','Bio'],F=['Coal','Oil'];for(let tx=14;tx<len-18;tx+=4+Math.floor(r()*3)){const tp=topAt(tx);if(tp>=ROWS)continue;const yy=r()<0.55?tp-1:tp-3;if(map[tx][yy]!==0)continue;const fos=r()<0.3;tokens.push({x:tx*TS+8,y:yy*TS+8,sp:fos?F[Math.floor(r()*2)]:G[Math.floor(r()*4)],fos,taken:false})}}
  goalX=(len-7)*TS;
- if(Ei===5){let fl=len-7;while(fl>len-30&&topAt(fl-1)===GROUND&&topAt(fl-2)===GROUND)fl--;const mn=Math.min(goalX-70,Math.max(fl*TS+4,goalX-140));boss={x:Math.max(mn,goalX-90),mn,y:GROUND*TS-30,vx:-0.9,vy:0,hp:3,inv:0,alive:true,t:0}}
+ if(Ei===5&&(i===29||i===34)){let fl=len-7;while(fl>len-30&&topAt(fl-1)===GROUND&&topAt(fl-2)===GROUND)fl--;const mn=Math.min(goalX-70,Math.max(fl*TS+4,goalX-140));boss={kind:i===34?'soot':'nox',o2:i===34?[{x:goalX-250,y:GROUND*TS-48,t:0},{x:goalX-150,y:GROUND*TS-64,t:0}]:[],x:Math.max(mn,goalX-90),mn,y:GROUND*TS-30,vx:-0.9,vy:0,hp:3,inv:0,alive:true,t:0}}
  P={x:2*TS,y:GROUND*TS-15,vx:0,vy:0,w:10,h:15,on:false,face:1,inv:0,sx:2*TS,sy:GROUND*TS-15};cam=0;lvlRight=0;lvlAsked=0;
  document.getElementById('hlvl').textContent=`${SYMP[i].n} Symposium · ${SYMP[i].y}`;MINI.init(i)};
 
@@ -482,9 +482,10 @@ const update=()=>{tick++;if(boost>0){boost--;wasHot=true}else if(wasHot){wasHot=
  if(Ec===3){dsq-=1/1700;for(const d of drops){if(!d.taken&&Math.abs(P.x+5-d.x)<10&&Math.abs(P.y+7-d.y)<12){d.taken=true;dropsGot++;dsq=Math.min(1,dsq+0.35);score+=15;toast('Fuel drop +15 · d² restored',d.x-8,d.y-10,'#9fdcff')}}
   if(dsq<=0){toast('Fully evaporated!',P.x,P.y-24,'#ffb0b0');dsq=1;hurt(false);if(paused)return}}
  if(Ec===4){eddyT++;for(const e of eddies){const dx=P.x+5-e.x,dy=P.y+7-e.y;if(dx*dx+dy*dy<e.r*e.r){P.vx+=e.d*0.22;P.vy-=0.18}}}
+ if(boss&&boss.alive)for(const o of boss.o2){if(o.t>0){o.t--;continue}if(Math.abs(P.x+5-o.x)<10&&Math.abs(P.y+7-o.y)<12){o.t=360;boost=180;toast('O₂: hot flame + shield (3 s)',o.x-30,o.y-14,'#9fdcff')}}
  if(boss&&boss.alive){boss.t++;boss.x+=boss.vx;if(boss.x<boss.mn){boss.x=boss.mn;boss.vx=Math.abs(boss.vx)}if(boss.x>goalX-40){boss.x=goalX-40;boss.vx=-Math.abs(boss.vx)}boss.vy+=0.3;boss.y+=boss.vy;if(boss.y>GROUND*TS-30){boss.y=GROUND*TS-30;boss.vy=0;if(boss.t%110===0)boss.vy=-6}if(boss.inv>0)boss.inv--;
-  if(P.x<boss.x+36&&P.x+P.w>boss.x&&P.y<boss.y+30&&P.y+P.h>boss.y){if((boost>0||(P.vy>0.5&&P.y+P.h-boss.y<12))&&boss.inv===0){boss.hp--;boss.inv=40;P.vy=-6.5;score+=60;toast(boss.hp?`NOx hit! ${boss.hp} to go`:'NOx defeated · exhaust cleaned +60',boss.x,boss.y-12,'#7be08a');if(!boss.hp){boss.alive=false;carbon+=3}}else if(P.inv===0&&boss.inv===0)hurt(false)}
-  if(P.x>goalX-12){P.x=goalX-12;if(tick%60===0)toast('Defeat the NOx first',P.x-40,P.y-20,'#ffc23d')}}
+  if(P.x<boss.x+36&&P.x+P.w>boss.x&&P.y<boss.y+30&&P.y+P.h>boss.y){const stomp=P.vy>0.5&&P.y+P.h-boss.y<12;if(boss.kind==='soot'&&stomp&&boost===0&&boss.inv===0){P.vy=-6.5;boss.inv=20;if(tick%2===0)toast('Stomping cannot burn soot. Get O₂!',boss.x-20,boss.y-14,'#ffc23d')}else if((boost>0||stomp&&boss.kind!=='soot')&&boss.inv===0){boss.hp--;boss.inv=40;P.vy=-6.5;score+=60;toast(boss.kind==='soot'?(boss.hp?`Soot oxidized! ${boss.hp} to go`:'Soot burned out by O₂ +60'):(boss.hp?`NOx hit! ${boss.hp} to go`:'NOx defeated · exhaust cleaned +60'),boss.x,boss.y-12,'#7be08a');if(!boss.hp){boss.alive=false;carbon+=3}}else if(P.inv===0&&boss.inv===0)hurt(false)}
+  if(P.x>goalX-12){P.x=goalX-12;if(tick%60===0)toast(boss.kind==='soot'?'Burn the soot first':'Defeat the NOx first',P.x-40,P.y-20,'#ffc23d')}}
  for(const t of tokens){if(t.taken)continue;if(Ec===7&&Math.abs(P.x+5-t.x)<9&&Math.abs(P.y+7-t.y)<11){t.taken=true;if(t.fos){fossil++;score=Math.max(0,score-10);toast(`${t.sp}: fossil carbon, CO₂ emitted −10`,t.x-8,t.y-10,'#ffb0b0')}else{clean++;score+=15;toast(`${t.sp}: clean fuel +15`,t.x-8,t.y-10,'#7be08a')}continue}
   if(Ec!==1)continue;
   if(Math.abs(P.x+5-t.x)<9&&Math.abs(P.y+7-t.y)<11){t.taken=true;const want=['H','O','OH'][chainNext];
@@ -664,8 +665,9 @@ const draw=()=>{const S=SYMP[lvl];const g=cx.createLinearGradient(0,0,0,BASE);g.
  /* enemies with their names */
  cx.font='7px Silkscreen, monospace';cx.textAlign='center';
  for(const e of ents)if(e.alive){const ex=e.x-cam|0;if(ex>-30&&ex<W+30){R(ex+1,e.y+10,10,2,'rgba(0,0,0,.25)');if(e.knock&&e.kt>170){const g=(e.kt-170)/90;cx.fillStyle=`rgba(255,${Math.round(140-100*g)},40,${0.35+0.4*g})`;cx.beginPath();cx.arc(ex+6,e.y+5,9+4*g+Math.sin(tick)*1.5,0,7);cx.fill()}cx.drawImage((e.knock?SOOTSP:FOESP[lvl])[Math.floor(tick/10)%2],ex,e.y|0);if(e.knock&&e.kt>200){cx.fillStyle='#ff8a3d';cx.fillText('KNOCK',ex+6,e.y-11)}cx.lineWidth=3;cx.strokeStyle='rgba(0,0,0,.7)';{const nm=e.knock?'Soot':S.foe;cx.strokeText(nm,ex+6,e.y-2);cx.fillStyle='#ffffff';cx.fillText(nm,ex+6,e.y-2)}}}
- if(boss&&boss.alive){const bx=boss.x-cam|0,by=boss.y|0;if(bx>-50&&bx<W+50){if(!(boss.inv>0&&Math.floor(tick/4)%2)){R(bx+2,by+28,32,3,'rgba(0,0,0,.3)');cx.drawImage(BOSSP[Math.floor(tick/12)%2],bx,by+3,36,27)}
-  cx.lineWidth=3;cx.strokeStyle='rgba(0,0,0,.75)';cx.strokeText('NOx BOSS',bx+18,by-8);cx.fillStyle='#ffc46b';cx.fillText('NOx BOSS',bx+18,by-8);for(let k=0;k<3;k++)R(bx+6+k*9,by-4,7,3,k<boss.hp?'#ff5a5a':'rgba(0,0,0,.35)')}}
+ if(boss&&boss.alive)for(const o of boss.o2){if(o.t>0)continue;const ox=o.x-cam,oy=o.y+Math.sin(tick/10)*2;cx.fillStyle='#ff5a5a';cx.beginPath();cx.arc(ox-4,oy,4,0,7);cx.arc(ox+4,oy,4,0,7);cx.fill();R(ox-4,oy-1,8,2,'#ffffff');cx.lineWidth=3;cx.strokeStyle='rgba(0,0,0,.75)';cx.strokeText('O₂',ox,oy-8);cx.fillStyle='#ffffff';cx.fillText('O₂',ox,oy-8)}
+ if(boss&&boss.alive){const bx=boss.x-cam|0,by=boss.y|0;if(bx>-50&&bx<W+50){if(!(boss.inv>0&&Math.floor(tick/4)%2)){R(bx+2,by+28,32,3,'rgba(0,0,0,.3)');cx.drawImage((boss.kind==='soot'?SOOTSP:BOSSP)[Math.floor(tick/12)%2],bx,by+3,36,27)}
+  cx.lineWidth=3;cx.strokeStyle='rgba(0,0,0,.75)';{const bn=boss.kind==='soot'?'SOOT BOSS':'NOx BOSS';cx.strokeText(bn,bx+18,by-8);cx.fillStyle=boss.kind==='soot'?'#e8e8e8':'#ffc46b';cx.fillText(bn,bx+18,by-8)}for(let k=0;k<3;k++)R(bx+6+k*9,by-4,7,3,k<boss.hp?'#ff5a5a':'rgba(0,0,0,.35)')}}
  for(const p of puffs){cx.fillStyle=`rgba(123,224,138,${p.t/18})`;R(p.x-cam-(18-p.t),p.y-(18-p.t)/2,3,3,cx.fillStyle);R(p.x-cam+(18-p.t),p.y-(18-p.t)/2,3,3,cx.fillStyle);p.t--}while(puffs.length&&puffs[0].t<=0)puffs.shift();
  for(const t of toasts){cx.globalAlpha=Math.min(1,t.life/20);cx.lineWidth=3;cx.strokeStyle='rgba(0,0,0,.75)';cx.strokeText(t.t,t.x-cam+8,t.y-(60-t.life)*0.4);cx.fillStyle=t.c;cx.fillText(t.t,t.x-cam+8,t.y-(60-t.life)*0.4);cx.globalAlpha=1;t.life--}while(toasts.length&&toasts[0].life<=0)toasts.shift();
  cx.textAlign='start';
