@@ -494,7 +494,7 @@ let h='';for(let y=2016;y<=2026;y+=2)h+=`<span class="yr" style="left:${pc(y)}%"
 document.getElementById('axis').innerHTML=h+segs.map(s=>`<span class="seg" style="left:${pc(s[0])}%;width:${pc(s[1])-pc(s[0])}%;background:${s[2]}"></span>`).join('');
 
 /* join form and visitor counter: use the Google Apps Script web app when API is set */
-const API="";
+const API="https://script.google.com/macros/s/AKfycbxwcf-SaDPXQ7qsWzPN2w4zvfttHTyn6Xg2QuLtdPMEmCYTxMNNM7zaiE8dQUxdFPFQ2Q/exec";
 if(API){let seen=false;const day='aay-visit-'+new Date().toISOString().slice(0,10);try{seen=!!localStorage.getItem(day);localStorage.setItem(day,'1')}catch(e){}
  fetch(API+(seen?'?count=1':'?visit=1')).then(r=>r.json()).then(j=>{if(j&&j.visits){const v=document.getElementById('visits');v.textContent=`${Number(j.visits).toLocaleString('en-US')} visitors since November 2026 ·`;v.hidden=false}}).catch(()=>{})}
 const form=document.getElementById('sub'),msg=document.getElementById('formmsg');
