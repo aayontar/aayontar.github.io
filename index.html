@@ -38,6 +38,8 @@ nav .links a.join{color:#07080d;background:var(--cy);padding:8px 14px;border-rad
 .hero canvas{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair;display:block}
 .over{position:relative;grid-row:2;display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:24px 40px;align-items:end;padding:0 max(5vw,16px) clamp(24px,4vw,48px);pointer-events:none}
 .over>*{pointer-events:auto}
+.motto{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:14px;letter-spacing:.32em;text-transform:uppercase;color:#ffb36b;margin:0 0 12px}
+.motto::before{content:"";display:inline-block;width:28px;height:2px;background:#ff8a3d;vertical-align:middle;margin-right:12px}
 .hero h1{font-family:"Hanken Grotesk","Helvetica Neue",Helvetica,Arial,sans-serif;font-size:clamp(50px,8vw,116px);font-weight:300;font-stretch:100%;text-transform:none;line-height:.98;letter-spacing:-.035em;text-shadow:0 2px 28px #000}
 .role{font-size:clamp(17px,1.7vw,20px);color:#d6d9e2;max-width:46ch;margin:18px 0 0;text-shadow:0 1px 12px #000}
 .panel{background:rgba(10,12,18,.74);border:1px solid rgba(255,255,255,.13);border-radius:14px;padding:18px 20px;backdrop-filter:blur(6px);justify-self:end;width:min(100%,400px)}
@@ -173,6 +175,7 @@ footer a{color:#c9cdd8}
   <canvas id="flame" aria-label="Live simulation of a premixed flame front. Click to ignite a new kernel."></canvas>
   <div class="over">
     <div>
+      <p class="motto">Ignite for science</p>
       <h1>Ahmet Alper Yontar</h1>
       <p class="role">Professor of Mechanical Engineering at Tarsus University.<br>I study how the fuels that come next burn, detonate and pay off, with experiments, chemistry, AI and open code.</p>
     </div>
@@ -301,7 +304,7 @@ footer a{color:#c9cdd8}
       <li>Every era has its own mechanic: build the H₂–O₂ chain, outrun a flame at its burning velocity, survive the d²-law, ride turbulent eddies, defeat the NOx boss, escape a detonation wave</li>
       <li>Classic combustion books introduced along the way, from Lewis and von Elbe to Law, Williams, Peters and Lee</li>
       <li>Timed cloud questions with a global-warming thermometer as the clock, and a username-only leaderboard</li>
-      <li>Undergraduate and graduate modes, with new questions every run</li>
+      <li>Undergraduate and graduate modes: a full journey through all 42 symposia asks 200 questions, drawn fresh each run from a bank of 420</li>
       <li>Every answer comes with a short explanation; numbers checked with Cantera</li>
     </ul>
     <a class="play" href="game.html">Play now</a>
@@ -381,7 +384,7 @@ footer a{color:#c9cdd8}
   </div>
 </div></section>
 </main>
-<footer><div class="wrap"><span>© 2026 Ahmet Alper Yontar · Department of Mechanical Engineering, Tarsus University, Mersin, Türkiye · <a href="mailto:alperyontar17@gmail.com">alperyontar17@gmail.com</a></span><span><span id="visits" hidden></span> The flames on this page are computed live in your browser. <a href="privacy.html">Privacy (KVKK)</a></span></div></footer>
+<footer><div class="wrap"><span><b style="letter-spacing:.2em;text-transform:uppercase;color:#ff8a3d">Ignite for science</b> · © 2026 Ahmet Alper Yontar · Department of Mechanical Engineering, Tarsus University, Mersin, Türkiye · <a href="mailto:alperyontar17@gmail.com">alperyontar17@gmail.com</a></span><span><span id="visits" hidden></span> The flames on this page are computed live in your browser. <a href="privacy.html">Privacy (KVKK)</a></span></div></footer>
 
 <script>
 {
