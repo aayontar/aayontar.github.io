@@ -144,6 +144,7 @@ body{overscroll-behavior:none}
       <p>Travel through all 42 International Symposia on Combustion, from Swampscott 1928 to Brazil 2028, across eight eras: thermochemistry, kinetics, laminar flames, droplets and sprays, turbulence, pollutants, detonation and the energy transition. Each era plays differently. Stomp the emissions, collect O₂ and air, and open the <b style="color:var(--am)">?</b> blocks: some hold questions on combustion and climate. Questions change every time you play.</p>
       <p class="k" style="margin-top:12px">Choose your hero</p>
       <div class="pick" id="pick"></div>
+      <p class="climate" style="background:#101a2e;border-color:#2b3f8a;color:#d8e6ff;font-size:14.5px"><b>Why your hero changes colour.</b> Spark is a burning flame kernel and Droplet a fuel droplet that burns as it evaporates, so both react to what they breathe. Grab <b>O₂</b> and the flame burns hotter and faster: your hero glows white-yellow, speeds up and gets a 3-second shield. When the shield fades, or when you grab <b>Air</b>, it cools into a blue low-temperature flame, like the faint blue glow of a cool flame. Burning cooler makes little NOx and soot, so NOx and soot enemies cannot hurt you while you are blue.</p>
       <p class="k" style="margin-top:12px">Choose your level</p>
       <div class="mode" id="mode"><button type="button" class="btn" data-m="ug" aria-pressed="true">Undergraduate</button><button type="button" class="btn" data-m="gr" aria-pressed="false">Graduate</button></div>
       <div class="row"><button type="button" class="btn main" id="start">Start the journey</button><button type="button" class="btn" id="cont" hidden></button><button type="button" class="btn" id="lbBtn">Leaderboard</button><button type="button" class="btn fs" id="fsBtn">⛶ Full screen</button></div>
@@ -676,7 +677,7 @@ const BOSSP=FOE.map(r=>mk(r,{s:'#4a2a04',g:'#c77a16',l:'#ffc46b',e:'#ffffff',k:'
 const FOESP=SYMP.map(S=>FOE.map(r=>mk(r,{s:S.foeC[2],g:S.foeC[0],l:S.foeC[1],e:"#ffffff",k:"#d0202a"})));
 
 /* ---------- state ---------- */
-const cv=document.getElementById('cv'),cx=cv.getContext('2d');cx.imageSmoothingEnabled=false;
+const cv=document.getElementById('cv'),cx=cv.getContext('2d');cx.lineJoin='round';cx.miterLimit=2;cx.imageSmoothingEnabled=false;
 const W=384,H=224,TS=16,ROWS=14,GROUND=11;
 let coolT=0,wasHot=false,sootF=[],clouds=[],caps=[],qEra=1,tokens=[],chain=0,maxChain=0,chainNext=0,front=null,dsq=1,drops=[],eddies=[],boss=null,clean=0,fossil=0,dropsGot=0,eddyT=0;
 let hero='spark',mode='ug',lvl=0,score=0,lives=3,map,cols,ents,boxes,goalX,P,cam=0,paused=true,qLog=[],lvlRight=0,lvlAsked=0,boost=0,tick=0,carbon=0,queues=null,lastT='',qIdx=0,runSeed=Date.now()%2147483647,runSaved=false;
@@ -986,7 +987,7 @@ const draw=()=>{const S=SYMP[lvl];const g=cx.createLinearGradient(0,0,0,BASE);g.
 /* ---------- special stages: balloon flight, catalyst maze, rising plume, knowledge sort ---------- */
 const SPECIAL={7:'balloon',9:'sortA',13:'maze',25:'climb',32:'sortB'};
 const MINFO={
- balloon:{t:'Special stage: hot-air balloon',d:'A propane burner heats the air inside the envelope. Warm air is less dense than the air around it, so the balloon rises: that is buoyancy. Hold jump to fire the burner, let go to sink. Dodge the storks and the soot clouds, collect O₂ and fly to the symposium.'},
+ balloon:{t:'Special stage: buoyant hot bubble',d:'You are a sphere of hot burned gas. Hot gas is less dense than the cool air around it, so it rises: that is buoyancy. Hold jump to keep heating the bubble and rise, let go and it cools and sinks. Soot, PAH, aromatics, unburned hydrocarbons and nitrogen oxides fly in and try to hit you. Dodge them, collect O₂ and float on to the symposium.'},
  maze:{t:'Special stage: catalytic converter',d:'A three-way catalyst oxidizes CO and unburned hydrocarbons (HC) to CO₂ and H₂O and reduces NOx to N₂. Eat every O₂ dot in the maze. Grab a Pt catalyst and the pollutants turn into harmless gases for a while: catch them then. Arrow keys move in all four directions.'},
  climb:{t:'Special stage: rising plume',d:'Hot combustion gases are lighter than the air around them, so they rise as a buoyant plume. Bounce from eddy to eddy up the plume and reach the top. Move left and right; leaving one side brings you in on the other.'},
  sortA:{t:'Special stage: knowledge sort',d:'Blocks fall with combustion species on them. Steer each one into the right bin: fuel, radical or pollutant. Down (or jump) drops it fast. A wrong block piles up; let a pile reach the top and you lose a heart. Sort 12 correctly to finish.'},
@@ -1000,11 +1001,12 @@ const MAZE=["########################","#o.........##.........o#","#.###.####.##
  "#####.####.GG.####.#####","#?....................?#","#.###.#.########.#.###.#","#.....#....##....#.....#","#.###.####.##.####.###.#","#o.........P..........o#","########################"];
 const GHOSTS=[['CO','CO₂',['#c23b3b','#ff8a7a','#4a1010']],['NOx','N₂',['#c77a16','#ffc46b','#4a2a04']],['HC','H₂O',['#6a8a2a','#c4e07a','#24300c']],['CO','CO₂',['#a0306a','#f08ac0','#3a0c24']]];
 const GHSP=GHOSTS.map(g=>FOE.map(r=>mk(r,{s:g[2][2],g:g[2][0],l:g[2][1],e:'#ffffff',k:'#d0202a'})));
+const NO2SP=FOE.map(r=>mk(r,{s:'#3a1206',g:'#9a3a1e',l:'#e07a50',e:'#ffffff',k:'#ffd060'}));
 const FRSP=FOE.map(r=>mk(r,{s:'#0c1a4a',g:'#3a5ad0',l:'#9fb4ff',e:'#ffffff',k:'#ffffff'}));
 const MINI={on:false,kind:null,M:null,
  init(i){this.kind=SPECIAL[i]||null;this.on=!!this.kind;if(!this.on)return;const M=this.M={t:0,inv:0,done:false,asked:0,prev:{}};const r=rng(runSeed+i*31+7);
   if(this.kind==='balloon'){M.x=0;M.len=3400;M.y=110;M.vy=0;M.obs=[];M.items=[];
-   for(let x=420;x<M.len-200;x+=110+Math.floor(r()*90)){const k=r();if(k<0.45)M.obs.push({k:'stork',x,y:30+r()*120,ph:r()*6});else if(k<0.8)M.obs.push({k:'soot',x,y:40+r()*120,ph:r()*6});else M.items.push({k:'o2',x,y:40+r()*120})}
+   const KINDS=['Soot','PAH','Aromatic','HC','NOx','NO₂'];for(let x=420;x<M.len-200;x+=90+Math.floor(r()*80)){if(r()<0.78)M.obs.push({k:KINDS[Math.floor(r()*KINDS.length)],x,y:44+r()*140,ph:r()*6,sp:0.3+r()*0.5});else M.items.push({k:'o2',x,y:40+r()*120})}
    M.items.push({k:'q',x:Math.floor(M.len*0.35),y:70},{k:'q',x:Math.floor(M.len*0.7),y:120})}
   if(this.kind==='maze'){M.g=MAZE.map(r=>r.split(''));M.dots=0;M.ghosts=[];let gi=0;
    for(let y=0;y<13;y++)for(let x=0;x<24;x++){const c=M.g[y][x];if(c==='.'||c==='o'||c==='?')M.dots++;if(c==='P'){M.p={x:x*16,y:y*16,dx:0,dy:0,wx:0,wy:0,sx:x*16,sy:y*16};M.g[y][x]=' '}
@@ -1019,9 +1021,9 @@ const MINI={on:false,kind:null,M:null,
  q(fx,fy){this.M.asked++;keys.L=keys.R=keys.J=keys.D=false;ask(false,null,fx,fy,false)},
  finish(){const M=this.M;if(M.done)return;M.done=true;keys.L=keys.R=keys.J=keys.D=false;toast('Stage clear!',cam+150,90,'#7be08a');setTimeout(()=>finale(),400)},
  update(){const M=this.M;tick++;M.t++;if(M.inv>0)M.inv--;if(M.done)return;const K=this.kind;
-  if(K==='balloon'){M.x+=1.25;if(keys.J)M.vy-=0.13;else M.vy+=0.07;M.vy=Math.max(-2,Math.min(2,M.vy));M.y+=M.vy;if(M.y<16){M.y=16;M.vy=0}if(M.y>176){M.y=176;M.vy=0}
-   const px=M.x+80,py=M.y;for(const o of M.obs){if(o.dead)continue;const ox=o.x-(o.k==='stork'?M.t*0.6:0),oy=o.y+Math.sin(M.t/20+o.ph)*12;o.cx=ox;o.cy=oy;if(Math.abs(ox-px)<16&&Math.abs(oy-(py-8))<16){o.dead=true;this.hit();toast(o.k==='stork'?'A stork bumped the balloon!':'Soot cloud!',60+cam,py-40,'#ffb0b0')}}
-   for(const it of M.items){if(it.got)continue;if(Math.abs(it.x-px)<14&&Math.abs(it.y-(py-8))<16){it.got=true;if(it.k==='o2'){score+=15;hud()}else{this.q(0.4,0.4);return}}}
+  if(K==='balloon'){M.x+=1.25;if(keys.J)M.vy-=0.13;else M.vy+=0.07;M.vy=Math.max(-2,Math.min(2,M.vy));M.y+=M.vy;if(M.y<40){M.y=40;M.vy=0}if(M.y>192){M.y=192;M.vy=0}
+   const px=M.x+80,py=M.y-8;for(const o of M.obs){if(o.dead)continue;if(o.yy==null)o.yy=o.y;o.x-=o.sp;const ahead=o.x-px;if(ahead<240&&ahead>-20)o.yy+=Math.max(-0.4,Math.min(0.4,(py-o.yy)*0.012));const ox=o.x,oy=o.yy+Math.sin(M.t/18+o.ph)*5;o.cx=ox;o.cy=oy;if(Math.abs(ox-px)<15&&Math.abs(oy-py)<15){o.dead=true;this.hit();toast(o.k+' hit you!',60+cam,M.y-40,'#ffb0b0')}}
+   for(const it of M.items){if(it.got)continue;if(Math.abs(it.x-px)<16&&Math.abs(it.y-py)<16){it.got=true;if(it.k==='o2'){score+=15;hud()}else{this.q(0.4,0.4);return}}}
    if(M.x>=M.len)this.finish()}
   if(K==='maze'){const p=M.p,wall=(x,y)=>{const c=M.g[y]&&M.g[y][x];return!c||c==='#'};
    if(keys.L){p.wx=-1;p.wy=0}else if(keys.R){p.wx=1;p.wy=0}else if(keys.J){p.wx=0;p.wy=-1}else if(keys.D){p.wx=0;p.wy=1}
@@ -1047,18 +1049,21 @@ const MINI={on:false,kind:null,M:null,
     if(M.ok>=M.need){M.blk=null;this.finish()}else this.newBlock()}}
   M.prev={...keys}},
  draw(){const M=this.M,S=SYMP[lvl],K=this.kind;const g=cx.createLinearGradient(0,0,0,H);g.addColorStop(0,S.sky[0]);g.addColorStop(1,S.sky[1]);cx.fillStyle=g;cx.fillRect(0,0,W,H);
-  cx.font='7px Silkscreen, monospace';const lab=(t,x,y,c)=>{cx.lineWidth=3;cx.strokeStyle='rgba(0,0,0,.75)';cx.strokeText(t,x,y);cx.fillStyle=c||'#fff';cx.fillText(t,x,y)};
+  cx.font='7px Silkscreen, monospace';const lab=(t,x,y,c)=>{cx.lineJoin='round';cx.lineWidth=3;cx.strokeStyle='rgba(0,0,0,.75)';cx.strokeText(t,x,y);cx.fillStyle=c||'#fff';cx.fillText(t,x,y)};
   const F=HEROES[hero].f,blink=M.inv>0&&Math.floor(tick/4)%2;
   if(K==='balloon'){for(let i=0;i<5;i++){const x=((i*110-M.x*0.15)%(W+120)+W+120)%(W+120)-60;cx.fillStyle='rgba(255,255,255,.6)';cx.beginPath();cx.ellipse(x,30+i*18,26,7,0,0,7);cx.fill()}
    cx.fillStyle='#6fa860';for(let k=0;k<6;k++){const x=((k*120-M.x*0.5)%720+720)%720-120;cx.beginPath();cx.ellipse(x+60,H,90,40,0,Math.PI,0);cx.fill()}R(0,H-8,W,8,'#4f8a4a');
    for(const it of M.items){if(it.got)continue;const x=it.x-M.x;if(x<-20||x>W+20)continue;if(it.k==='o2'){cx.fillStyle='#ff5a5a';cx.beginPath();cx.arc(x-4,it.y,4,0,7);cx.arc(x+4,it.y,4,0,7);cx.fill();R(x-4,it.y-1,8,2,'#fff')}else{R(x-8,it.y-8,16,16,'#2a1a04');R(x-7,it.y-7,14,14,'#ffc23d');cx.textAlign='center';cx.fillStyle='#2a1a04';cx.font='10px Silkscreen, monospace';cx.fillText('?',x,it.y+4);cx.font='7px Silkscreen, monospace'}}
-   cx.textAlign='center';for(const o of M.obs){if(o.dead||o.cx==null)continue;const x=o.cx-M.x,y=o.cy;if(x<-30||x>W+30)continue;
-    if(o.k==='stork'){const f=Math.floor(M.t/8)%2;R(x-8,y-2,16,5,'#ffffff');R(x+6,y-6,5,5,'#ffffff');R(x+11,y-5,7,2,'#ff8a3d');R(x-8,y+3,2,6,'#ff8a3d');R(x-5,y+3,2,6,'#ff8a3d');R(x-6,f?y-9:y+2,12,4,'#ffffff');R(x-6,f?y-9:y+5,4,3,'#1a1a1a');lab('Stork',x,y-14)}
-    else{for(let k=0;k<4;k++){cx.fillStyle='rgba(40,38,42,.85)';cx.beginPath();cx.arc(x-9+k*6,y+Math.sin(k+M.t/10)*2,8,0,7);cx.fill()}lab('Soot',x,y-12,'#e8e8e8')}}
-   const bx=80,by=M.y;cx.strokeStyle='#5a3a22';cx.lineWidth=1;cx.beginPath();cx.moveTo(bx-12,by-14);cx.lineTo(bx-6,by+2);cx.moveTo(bx+12,by-14);cx.lineTo(bx+6,by+2);cx.stroke();
-   const cols2=['#ff5a5a','#ffd85a','#4fb6ff','#7be08a'];for(let k=0;k<4;k++){cx.fillStyle=cols2[k];cx.beginPath();cx.ellipse(bx,by-30,18-k*4.5,20,0,0,7);cx.fill()}
-   if(keys.J&&!blink){cx.fillStyle='#ff8a3d';cx.beginPath();cx.moveTo(bx-3,by-6);cx.quadraticCurveTo(bx,by-18-Math.random()*4,bx+3,by-6);cx.fill()}
-   if(!blink)cx.drawImage(F.idle,bx-6,by-2);R(bx-8,by+10,16,6,'#8a5a32');R(bx-8,by+10,16,1,'#b07a42');
+   cx.textAlign='center';for(const o of M.obs){if(o.dead||o.cx==null)continue;const x=o.cx-M.x,y=o.cy;if(x<-30||x>W+30)continue;const hex=(hx,hy,r0,fill)=>{cx.beginPath();for(let a=0;a<6;a++){const t=a*Math.PI/3+Math.PI/6;cx.lineTo(hx+r0*Math.cos(t),hy+r0*Math.sin(t))}cx.closePath();if(fill){cx.fillStyle=fill;cx.fill()}cx.strokeStyle='#2a2a30';cx.lineWidth=1.5;cx.stroke()};
+    if(o.k==='Soot'){for(let k=0;k<4;k++){cx.fillStyle='rgba(30,28,32,.9)';cx.beginPath();cx.arc(x-8+k*5,y+Math.sin(k*2+M.t/10)*3,6,0,7);cx.fill()}lab('Soot',x,y-11,'#e8e8e8')}
+    else if(o.k==='PAH'){const r0=5.5,dx=r0*Math.sqrt(3);hex(x-dx,y,r0,'#d9d2c3');hex(x,y,r0,'#d9d2c3');hex(x-dx/2,y-r0*1.5,r0,'#d9d2c3');lab('PAH',x-4,y-22,'#ffd8a0')}
+    else if(o.k==='Aromatic'){hex(x,y,7,'#e8e2d4');cx.beginPath();cx.arc(x,y,3.6,0,7);cx.stroke();lab('Aromatic',x,y-11,'#ffd8a0')}
+    else if(o.k==='HC'){cx.strokeStyle='#3a3a40';cx.lineWidth=2;cx.beginPath();for(let k=0;k<6;k++)cx.lineTo(x-12+k*5,y+(k%2?-3:3));cx.stroke();for(let k=0;k<6;k++){cx.fillStyle='#2a2a30';cx.beginPath();cx.arc(x-12+k*5,y+(k%2?-3:3),1.8,0,7);cx.fill()}lab('HC',x,y-10,'#ffd8a0')}
+    else{const sp=o.k==='NOx'?GHSP[1]:NO2SP;cx.drawImage(sp[Math.floor(M.t/10)%2],x-6,y-4);lab(o.k,x,y-7,o.k==='NOx'?'#ffc46b':'#ff9a7a')}}
+   const bx=80,by=M.y-8,heat=keys.J?1:0.55,gl=cx.createRadialGradient(bx-3,by-4,2,bx,by,14);gl.addColorStop(0,`rgba(255,250,220,${0.95*heat})`);gl.addColorStop(0.55,`rgba(255,170,70,${0.75*heat})`);gl.addColorStop(1,'rgba(255,120,40,0)');
+   if(!blink){cx.fillStyle=gl;cx.beginPath();cx.arc(bx,by,15,0,7);cx.fill();cx.strokeStyle=`rgba(255,220,160,${0.5+0.3*heat})`;cx.lineWidth=1;cx.beginPath();cx.arc(bx,by,12,0,7);cx.stroke();cx.drawImage(F.idle,bx-6,by-8)}
+   for(let k=0;k<3;k++){const yy=by+16+((M.t*0.8+k*9)%24);cx.fillStyle=`rgba(255,200,140,${0.35-((M.t*0.8+k*9)%24)/80})`;cx.beginPath();cx.arc(bx-6+k*6,yy,2,0,7);cx.fill()}
+   if(M.t<240)lab('Hold jump: heat up and rise by buoyancy',W/2,H-16,'#fff');
    const pr=Math.min(1,M.x/M.len);R(120,6,144,4,'rgba(0,0,0,.35)');R(120,6,144*pr,4,'#ffe066');cx.textAlign='left'}
   if(K==='maze'){const ac=S.acc;for(let y=0;y<13;y++)for(let x=0;x<24;x++){const c=M.g[y][x],X=x*16,Y=y*16+8;if(c==='#'){R(X,Y,16,16,'#141a3a');R(X+2,Y+2,12,12,ac);R(X+4,Y+4,8,8,'#141a3a')}
     else if(c==='.'){cx.fillStyle='#ff6a6a';cx.beginPath();cx.arc(X+6,Y+8,2,0,7);cx.arc(X+10,Y+8,2,0,7);cx.fill()}
