@@ -1048,7 +1048,7 @@ const MINI={on:false,kind:null,M:null,
    for(let y=0;y<13;y++)for(let x=0;x<24;x++){const c=M.g[y][x];if(c==='.'||c==='o'||c==='?')M.dots++;if(c==='P'){M.p={x:x*16,y:y*16,dx:0,dy:0,wx:0,wy:0,sx:x*16,sy:y*16};M.g[y][x]=' '}
     if(c==='G'){M.g[y][x]=' ';for(let k=0;k<2;k++){M.ghosts.push({x:x*16,y:y*16,sx:x*16,sy:y*16,dx:k?1:-1,dy:0,id:gi%4,wait:120+gi*180});gi++}}}
    M.fright=0;M.total=M.dots}
-  if(this.kind==='climb'){M.top=2400;M.plats=[];let y=200;M.plats.push({x:150,y:200,w:84});while(y>-M.top){y-=34+Math.floor(r()*14);M.plats.push({x:10+Math.floor(r()*300),y,w:44+Math.floor(r()*24),mv:r()<0.25?(r()<0.5?-0.6:0.6):0,cat:M.plats.length%7===6})}
+  if(this.kind==='climb'){M.top=2000;M.plats=[];let y=200,px=150;M.plats.push({x:150,y:200,w:84});while(y>-M.top){y-=30+Math.floor(r()*10);const cat=M.plats.length%5===4;px=Math.max(10,Math.min(W-90,px+Math.floor((r()-0.5)*170)));M.plats.push({x:px,y,w:cat?80:56+Math.floor(r()*22),mv:!cat&&r()<0.15?(r()<0.5?-0.35:0.35):0,cat})}
    M.p={x:184,y:184,vx:0,vy:-6};M.camY=0;M.items=[{k:'q',x:120,y:-Math.floor(M.top*0.35)},{k:'q',x:250,y:-Math.floor(M.top*0.7)}];M.soot=[];M.best=0}
   if(this.kind==='sortA'||this.kind==='sortB'){const S0=SORTS[this.kind];M.bins=S0.bins;M.bag=shuffle(S0.items.slice(),r);M.stack=[0,0,0];M.pile=[[],[],[]];M.ok=0;M.need=12;M.qAt=[3,8];this.newBlock()}},
  newBlock(){const M=this.M;if(M.asked<2&&M.ok>=M.qAt[M.asked]){M.blk={q:true,lane:1,y:-20,label:'?'};return}if(!M.bag.length)M.bag=shuffle(SORTS[this.kind].items.slice());const it=M.bag.pop();M.blk={label:it[0],cat:it[1],lane:1,y:-20}},
@@ -1071,10 +1071,10 @@ const MINI={on:false,kind:null,M:null,
     if(Math.abs(g.x-p.x)<8&&Math.abs(g.y-p.y)<8){if(M.fright>0){score+=50;hud();toast(GHOSTS[g.id][0]+' → '+GHOSTS[g.id][1]+' +50',g.x+cam,g.y,'#9fdcff');g.x=g.sx;g.y=g.sy;g.wait=120}
      else if(M.inv===0){this.hit();p.x=p.sx;p.y=p.sy;p.dx=p.dy=0;for(const h of M.ghosts){h.x=h.sx;h.y=h.sy;h.wait=120}}}}
    if(M.dots<=0)this.finish()}
-  if(K==='climb'){const p=M.p;p.vx=keys.L?-2.4:keys.R?2.4:p.vx*0.8;p.x+=p.vx;if(p.x<-8)p.x=W-4;if(p.x>W-4)p.x=-8;p.vy+=0.22;const oy=p.y;p.y+=p.vy;
+  if(K==='climb'){const p=M.p;p.vx=keys.L?-2.4:keys.R?2.4:p.vx*0.8;p.x+=p.vx;if(p.x<-8)p.x=W-4;if(p.x>W-4)p.x=-8;p.vy+=0.2;const oy=p.y;p.y+=p.vy;
    for(const pl of M.plats){if(pl.mv){pl.x+=pl.mv;if(pl.x<0||pl.x+pl.w>W)pl.mv*=-1}if(p.vy>0&&oy+16<=pl.y&&p.y+16>=pl.y&&p.x+10>pl.x&&p.x<pl.x+pl.w){p.y=pl.y-16;if(pl.cat){p.vy=-11;toast('Catalyst boost!',p.x+cam,p.y-M.camY-12,'#ffe066')}else p.vy=keys.J?-8.4:-6.4}}
    M.camY=Math.min(M.camY,p.y-110);M.best=Math.max(M.best,-p.y);
-   if(M.t%50===0)M.soot.push({x:Math.random()*W,y:M.camY-10});for(const s2 of M.soot){s2.y+=1.4;if(!s2.dead&&Math.abs(s2.x-(p.x+5))<8&&Math.abs(s2.y-(p.y+8))<10){s2.dead=true;this.hit();toast('Soot!',p.x+cam,p.y-M.camY-10,'#ffb0b0')}}M.soot=M.soot.filter(s2=>!s2.dead&&s2.y<M.camY+H+20);
+   if(M.t%100===0)M.soot.push({x:Math.random()*W,y:M.camY-10});for(const s2 of M.soot){s2.y+=1.4;if(!s2.dead&&Math.abs(s2.x-(p.x+5))<8&&Math.abs(s2.y-(p.y+8))<10){s2.dead=true;this.hit();toast('Soot!',p.x+cam,p.y-M.camY-10,'#ffb0b0')}}M.soot=M.soot.filter(s2=>!s2.dead&&s2.y<M.camY+H+20);
    for(const it of M.items){if(!it.got&&Math.abs(it.x-p.x)<16&&Math.abs(it.y-p.y)<18){it.got=true;this.q(0.5,0.4);return}}
    if(p.y>M.camY+H+10){this.hit();const pl=M.plats.filter(q=>q.y>M.camY+40&&q.y<M.camY+H-20).sort((a,b)=>b.y-a.y)[0]||M.plats[0];p.x=pl.x+pl.w/2-5;p.y=pl.y-30;p.vy=-6.4}
    if(-p.y>=M.top)this.finish()}
