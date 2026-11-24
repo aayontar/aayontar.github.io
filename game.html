@@ -81,6 +81,8 @@ table.lb{width:100%;border-collapse:collapse;margin-top:10px;font-size:15px}
 .lb tr.me td{color:var(--am)}
 .pad{display:none;justify-content:space-between;gap:12px;padding:14px 4px 4px;user-select:none;-webkit-user-select:none}
 .pad div{display:flex;gap:12px}
+.pad .padr{flex-direction:column;align-items:center;gap:8px}
+.pad button.d{width:56px;height:56px;font-size:16px}
 .pad button{width:72px;height:72px;border-radius:50%;border:2px solid #2c3040;background:#141722;color:#fff;font:20px Silkscreen,monospace;touch-action:none}
 .pad button.j{width:84px;height:84px;background:#2a1a10;border-color:var(--fl)}
 @media(pointer:coarse){.pad{display:flex}}
@@ -125,6 +127,8 @@ body{overscroll-behavior:none}
  .pad div{pointer-events:auto;gap:8px}
  .pad button{width:58px;height:58px;background:rgba(20,23,34,.5);border-color:rgba(255,255,255,.35);font-size:18px}
  .pad button.j{width:70px;height:70px;background:rgba(70,35,12,.55)}
+ .pad button.d{width:46px;height:46px;font-size:14px}
+ .pad .padr{gap:6px}
 }
 @media (pointer:coarse){.fs.ok{display:inline-flex}}
 .modal .pad{visibility:hidden}
@@ -170,7 +174,7 @@ body{overscroll-behavior:none}
 
     <div class="ov" id="ovCard"><div class="card" id="cardBody"></div></div>
   </div>
-  <div class="pad" id="pad"><div><button type="button" data-k="L" aria-label="Left">◀</button><button type="button" data-k="R" aria-label="Right">▶</button><button type="button" data-k="D" aria-label="Down">▼</button></div><div><button type="button" class="j" data-k="J" aria-label="Jump">▲</button></div></div>
+  <div class="pad" id="pad"><div><button type="button" data-k="L" aria-label="Left">◀</button><button type="button" data-k="R" aria-label="Right">▶</button></div><div class="padr"><button type="button" class="j" data-k="J" aria-label="Jump">▲</button><button type="button" class="d" data-k="D" aria-label="Down">▼</button></div></div>
 </div>
 <div class="help"><span>Move <kbd>←</kbd> <kbd>→</kbd> or <kbd>A</kbd> <kbd>D</kbd> · Jump <kbd>Space</kbd> <kbd>↑</kbd> <kbd>W</kbd> · Answer <kbd>1</kbd>–<kbd>4</kbd></span><span>Stomp emissions from above. How they move follows their density: lighter-than-air CH₄ floats, CO and NOx (about as dense as air) hop, and heavier CO₂, N₂O, carbon and soot walk. O₂ gives a hot flame with a 3-second shield; air gives a cool, low-temperature flame that NOx and soot cannot harm. Glowing enemies are about to knock. <span class="rot">Turn your phone sideways for a bigger screen.</span></span></div>
 <footer>Symposium Run is an independent educational game by Ahmet Alper Yontar. It is not affiliated with or endorsed by The Combustion Institute. Symposium dates and places follow the Institute's public list. Numerical answers were computed with Cantera (GRI-Mech 3.0, chemical equilibrium); global warming potentials follow IPCC AR6. City skylines are drawn freely and are not to scale. The leaderboard stores only a username, a score and a random device code; no email is collected in the game. <a href="privacy.html" style="color:#9aa0ad">Privacy notice (KVKK)</a>.</footer>
@@ -1064,7 +1068,7 @@ const drawGate=(gx,gy,S)=>{const st='#efe7d3',sh='#cdbf9f',dk='#9c8d6c',top=gy-6
 const SPECIAL={7:'balloon',9:'sortA',13:'maze',25:'climb',32:'sortB'};
 const MINFO={
  balloon:{t:'Special stage: buoyant hot bubble',d:'You are a sphere of hot burned gas. Hot gas is less dense than the cool air around it, so it rises: that is buoyancy. Hold jump to keep heating the bubble and rise, let go and it cools and sinks. Soot, PAH, aromatics, unburned hydrocarbons and nitrogen oxides fly in and try to hit you. Dodge them, collect O₂ and float on to the symposium.'},
- maze:{t:'Special stage: catalytic converter',d:'A three-way catalyst oxidizes CO and unburned hydrocarbons (HC) to CO₂ and H₂O and reduces NOx to N₂. Eat every O₂ dot in the maze. Grab a Pt catalyst and the pollutants turn into harmless gases for a while: catch them then. Arrow keys move in all four directions.'},
+ maze:{t:'Special stage: catalytic converter',d:'A three-way catalyst oxidizes CO and unburned hydrocarbons (HC) to CO₂ and H₂O and reduces NOx to N₂. Eat every O₂ dot in the maze, or survive for 2 minutes. Grab a Pt catalyst and the pollutants turn into harmless gases for a while: catch them then. Arrow keys move in all four directions.'},
  climb:{t:'Special stage: rising plume',d:'Hot combustion gases are lighter than the air around them, so they rise as a buoyant plume. Bounce from eddy to eddy up the plume and reach the top. Hold jump when you land for a higher bounce, and land on a Pt catalyst pad for a big boost. Move left and right; leaving one side brings you in on the other.'},
  sortA:{t:'Special stage: knowledge sort',d:'Blocks fall with combustion species on them. Steer each one into the right bin: fuel, radical or pollutant. Down (or jump) drops it fast. A wrong block piles up; let a pile reach the top and you lose a heart. Sort 12 correctly to finish.'},
  sortB:{t:'Special stage: knowledge sort',d:'This time the blocks are research words. Steer each into the right bin: a laser or optical diagnostic, a simulation method, or a combustion phenomenon. Down (or jump) drops it fast. Sort 12 correctly to finish.'}};
@@ -1086,8 +1090,8 @@ const MINI={on:false,kind:null,M:null,
    M.items.push({k:'q',x:Math.floor(M.len*0.35),y:70},{k:'q',x:Math.floor(M.len*0.7),y:120})}
   if(this.kind==='maze'){M.g=MAZE.map(r=>r.split(''));M.dots=0;M.ghosts=[];let gi=0;
    for(let y=0;y<13;y++)for(let x=0;x<24;x++){const c=M.g[y][x];if(c==='.'||c==='o'||c==='?')M.dots++;if(c==='P'){M.p={x:x*16,y:y*16,dx:0,dy:0,wx:0,wy:0,sx:x*16,sy:y*16};M.g[y][x]=' '}
-    if(c==='G'){M.g[y][x]=' ';for(let k=0;k<3;k++){M.ghosts.push({x:x*16,y:y*16,sx:x*16,sy:y*16,dx:k%2?1:-1,dy:0,id:gi%6,wait:120+gi*150});gi++}}}
-   M.fright=0;M.total=M.dots}
+    if(c==='G'){M.g[y][x]=' ';for(let k=0;k<3;k++){if(gi>=5)break;M.ghosts.push({x:x*16,y:y*16,sx:x*16,sy:y*16,dx:k%2?1:-1,dy:0,id:gi%6,wait:120+gi*150});gi++}}}
+   M.fright=0;M.total=M.dots;M.time=120*60}
   if(this.kind==='climb'){M.top=2000;M.plats=[];let y=200,px=150;M.plats.push({x:150,y:200,w:84});while(y>-M.top){y-=30+Math.floor(r()*10);const cat=M.plats.length%5===4;px=Math.max(10,Math.min(W-90,px+Math.floor((r()-0.5)*170)));M.plats.push({x:px,y,w:cat?80:56+Math.floor(r()*22),mv:!cat&&r()<0.15?(r()<0.5?-0.35:0.35):0,cat})}
    M.p={x:184,y:184,vx:0,vy:-6};M.camY=0;M.items=[{k:'q',x:120,y:-Math.floor(M.top*0.35)},{k:'q',x:250,y:-Math.floor(M.top*0.7)}];M.soot=[];M.best=0}
   if(this.kind==='sortA'||this.kind==='sortB'){const S0=SORTS[this.kind];M.bins=S0.bins;M.bag=shuffle(S0.items.slice(),r);M.stack=[0,0,0];M.pile=[[],[],[]];M.ok=0;M.need=12;M.qAt=[3,8];this.newBlock()}},
@@ -1095,7 +1099,7 @@ const MINI={on:false,kind:null,M:null,
  edge(k){const M=this.M,v=keys[k]&&!M.prev[k];return v},
  hit(){const M=this.M;if(M.inv>0)return;M.inv=90;lives--;hud();if(lives<=0){lives=1;hurt(false)}},
  q(fx,fy){this.M.asked++;keys.L=keys.R=keys.J=keys.D=false;ask(false,null,fx,fy,false)},
- finish(){const M=this.M;if(M.done)return;M.done=true;keys.L=keys.R=keys.J=keys.D=false;toast('Stage clear!',cam+150,90,'#7be08a');setTimeout(()=>finale(),400)},
+ finish(){const M=this.M;if(M.done)return;M.done=true;keys.L=keys.R=keys.J=keys.D=false;toast('Stage clear!',cam+150,90,'#7be08a');setTimeout(()=>finale(Math.max(0,2-M.asked)),400)},
  update(){const M=this.M;tick++;M.t++;if(M.inv>0)M.inv--;if(M.done)return;const K=this.kind;
   if(K==='balloon'){M.x+=1.25;const KINDS=['Soot','PAH','Aromatic','HC','NOx','NO₂'],rr=M.r;while(M.next<Math.min(M.x+W+40,M.len-60)){const x=M.next;if(rr()<0.75)M.obs.push({k:KINDS[Math.floor(rr()*KINDS.length)],x:x+40,y:44+rr()*140,ph:rr()*6,sp:0.3+rr()*0.4});else M.items.push({k:'o2',x,y:44+rr()*130});M.next+=80+Math.floor(rr()*50)}if(keys.J)M.vy-=0.13;else M.vy+=0.07;M.vy=Math.max(-2,Math.min(2,M.vy));M.y+=M.vy;if(M.y<40){M.y=40;M.vy=0}if(M.y>192){M.y=192;M.vy=0}
    const px=M.x+80,py=M.y-8;for(const o of M.obs){if(o.dead)continue;if(o.yy==null)o.yy=o.y;o.x-=o.sp;const ahead=o.x-px;if(ahead<240&&ahead>-20)o.yy+=Math.max(-0.4,Math.min(0.4,(py-o.yy)*0.012));const ox=o.x,oy=o.yy+Math.sin(M.t/18+o.ph)*5;o.cx=ox;o.cy=oy;if(Math.abs(ox-px)<15&&Math.abs(oy-py)<15){o.dead=true;this.hit();toast(o.k+' hit you!',60+cam,M.y-40,'#ffb0b0')}}
@@ -1110,7 +1114,7 @@ const MINI={on:false,kind:null,M:null,
      let pick=opts[Math.floor(Math.random()*opts.length)];if(Math.random()<0.35){const d=([a,b])=>Math.abs(tx+a-p.x/16)+Math.abs(ty+b-p.y/16);opts.sort((u,v)=>M.fright>0?d(v)-d(u):d(u)-d(v));pick=opts[0]}g.dx=pick[0];g.dy=pick[1]});
     if(Math.abs(g.x-p.x)<8&&Math.abs(g.y-p.y)<8){if(M.fright>0){score+=50;hud();toast(GHOSTS[g.id][0]+' → '+GHOSTS[g.id][1]+' +50',g.x+cam,g.y,'#9fdcff');g.x=g.sx;g.y=g.sy;g.wait=120}
      else if(M.inv===0){this.hit();p.x=p.sx;p.y=p.sy;p.dx=p.dy=0;for(const h of M.ghosts){h.x=h.sx;h.y=h.sy;h.wait=120}}}}
-   if(M.dots<=0)this.finish()}
+   M.time--;if(M.dots<=0||M.time<=0){if(M.time<=0)toast('Time is up: the catalyst did its job!',W/2-80+cam,90,'#ffe066');this.finish()}}
   if(K==='climb'){const p=M.p;p.vx=keys.L?-2.4:keys.R?2.4:p.vx*0.8;p.x+=p.vx;if(p.x<-8)p.x=W-4;if(p.x>W-4)p.x=-8;p.vy+=0.2;const oy=p.y;p.y+=p.vy;
    for(const pl of M.plats){if(pl.mv){pl.x+=pl.mv;if(pl.x<0||pl.x+pl.w>W)pl.mv*=-1}if(p.vy>0&&oy+16<=pl.y&&p.y+16>=pl.y&&p.x+10>pl.x&&p.x<pl.x+pl.w){p.y=pl.y-16;if(pl.cat){p.vy=-11;toast('Catalyst boost!',p.x+cam,p.y-M.camY-12,'#ffe066')}else p.vy=keys.J?-8.4:-6.4}}
    M.camY=Math.min(M.camY,p.y-110);M.best=Math.max(M.best,-p.y);
@@ -1148,7 +1152,7 @@ const MINI={on:false,kind:null,M:null,
     else if(c==='?'){R(X+1,Y+1,14,14,'#2a1a04');R(X+2,Y+2,12,12,'#ffc23d');cx.textAlign='center';cx.fillStyle='#2a1a04';cx.font='10px Silkscreen, monospace';cx.fillText('?',X+8,Y+12);cx.font='7px Silkscreen, monospace'}}
    cx.textAlign='center';for(const g of M.ghosts){const sp=M.fright>0?(M.fright<90&&Math.floor(tick/6)%2?GHSP[g.id]:FRSP):GHSP[g.id];cx.drawImage(sp[Math.floor(tick/10)%2],g.x+2,g.y+12);lab(M.fright>0?GHOSTS[g.id][1]:GHOSTS[g.id][0],g.x+8,g.y+10,M.fright>0?'#9fdcff':'#fff')}
    const p=M.p;if(!blink){cx.save();const fr=(p.dx||p.dy)?(Math.floor(tick/7)%2?F.w1:F.w2):F.idle;if(p.dx<0){cx.translate(p.x+14,p.y+8);cx.scale(-1,1);cx.drawImage(fr,0,0)}else cx.drawImage(fr,p.x+2,p.y+8);cx.restore()}
-   cx.textAlign='left';lab(`O₂ left: ${M.dots}`,150,7,'#ffe066')}
+   cx.textAlign='left';{const t=Math.max(0,Math.ceil(M.time/60));lab(`O₂ left: ${M.dots}   Time ${Math.floor(t/60)}:${String(t%60).padStart(2,'0')}`,130,7,t<=15?'#ff8a7a':'#ffe066')}}
   if(K==='climb'){const cy=M.camY,pr=Math.min(1,M.best/M.top);
    const g2=cx.createLinearGradient(0,0,0,H);g2.addColorStop(0,`rgba(20,24,60,${0.6*pr})`);g2.addColorStop(1,'rgba(0,0,0,0)');cx.fillStyle=g2;cx.fillRect(0,0,W,H);
    if(pr>0.5){const a=Math.min(1,(pr-0.5)/0.4),vx=250,vh=40+90*a;cx.globalAlpha=a;cx.fillStyle='#6a5a52';cx.beginPath();cx.moveTo(vx-130,H);cx.lineTo(vx-14,H-vh);cx.lineTo(vx+14,H-vh);cx.lineTo(vx+130,H);cx.fill();R(vx-14,H-vh,28,4,'#4a3e38');for(let k=0;k<4;k++){cx.fillStyle=`rgba(200,200,205,${0.5-k*0.1})`;cx.beginPath();cx.arc(vx+k*8,H-vh-10-k*12+Math.sin(tick/20+k)*2,7+k*3,0,7);cx.fill()}cx.font='7px Silkscreen, monospace';cx.textAlign='center';cx.fillStyle='#fff';cx.fillText('Vesuvius',vx,H-8);cx.globalAlpha=1}
@@ -1228,7 +1232,8 @@ const showCard=(html,after)=>{cardBody.innerHTML=html;ovCard.classList.add('on')
 const hideCard=()=>ovCard.classList.remove('on');
 const medal=c=>`<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M12 2h6l3 10h-6zM22 2h6l-3 10h-6z" fill="#c9a6ff"/><circle cx="20" cy="25" r="12" fill="${c}"/><circle cx="20" cy="25" r="8" fill="none" stroke="#1a1a1a" stroke-width="2"/><path d="M20 19c2 3 4 4 4 7a4 4 0 0 1-8 0c0-3 2-4 4-7z" fill="#1a1a1a"/></svg>`;
 const intro=i=>{const S=SYMP[i],E=ERAS[eraOf(i)];paused=true;showCard(`${i===E.from?`<div class="climate" style="background:#1c1a10;border-color:#4b3d10;color:#f3e6c4;margin:0 0 12px"><b>Era ${eraOf(i)+1}: ${E.name}</b> · ${E.years}<br>${E.how}</div>`:''}<span class="k">${S.n} International Symposium on Combustion · ${S.date}</span><h2>${S.place}</h2>${SPECIAL[i]?`<div class="climate" style="background:#101a2e;border-color:#2b3f8a;color:#d8e6ff"><b>${MINFO[SPECIAL[i]].t}</b><br>${MINFO[SPECIAL[i]].d}</div>`:''}<p ${SPECIAL[i]?'hidden':''}>The emissions here are <b style="color:var(--leaf)">${S.foe}</b>. Stomp them from above to capture their carbon. Watch the sky: the question cloud drops timed questions, and a warming thermometer is the clock.</p><div class="climate">${S.note}</div>${ATMO[i]?`<div class="climate" style="background:#101a2e;border-color:#2b3f8a;color:#d8e6ff">Special stage: ${{laser:'Laser diagnostics lab. Laser sheets light up the flame: PLIF, PIV and Raman are how researchers see inside flames.',microgravity:'Microgravity combustion. Without gravity there is no buoyancy: hot gas does not rise, so a candle flame becomes a dim, blue sphere. Hokkaido was home to the JAMIC drop shaft, a 710 m former coal-mine shaft that gave about 10 seconds of free fall for experiments (1991–2003). Gravity is low in this level, so your jumps float.',engines:'Engines. Heidelberg lies on the route of the first long-distance car journey: in August 1888 Bertha Benz drove the Benz Patent-Motorwagen from Mannheim via Heidelberg to Pforzheim. Behind you: a piston engine, a gas turbine and a rocket engine, three ways of turning combustion into motion.',shock:'Shocks and detonations. McGill University in Montreal, home of John H. S. Lee\'s Shock Wave Physics Group, has a long history of detonation research. Behind you: a detonation front with its cellular structure, and supersonic jets with shock diamonds and Mach disks.',spectroscopy:'Combustion spectroscopy. Excited radicals glow at their own wavelengths: OH* near 309 nm, CH* near 431 nm, C₂* near 516 nm.',acoustics:'Combustion acoustics. When heat release and pressure oscillate in phase, flames can roar and shake an engine.'}[ATMO[i]]}</div>`:''}${ACIDL&&ACIDL.includes(i)?`<div class="climate" style="background:#18200f;border-color:#3f5a1e;color:#e6ffb0"><b>Acid rain ahead.</b> Near the end of this level a cloud gathers the NOx. In the atmosphere NO₂ reacts with water to form nitric acid (HNO₃), which falls as acid rain. Dodge the drops, or keep your O₂ shield up.</div>`:''}<div class="row"><button class="btn main" id="go" type="button">Start</button></div>`,()=>document.getElementById('go').onclick=()=>{hideCard();paused=false})};
-const finale=()=>{ask(true,()=>ask(true,levelDone),0.85,0.55)};
+/* gate questions: always 2, plus any a special stage did not get to ask, so a full journey keeps its 200 questions */
+const finale=(extra=0)=>{let n=2+extra;const next=()=>{n--;if(n>0)ask(true,next,0.85,0.55);else levelDone()};ask(true,next,0.85,0.55)};
 const levelDone=()=>{const S=SYMP[lvl],need=Math.max(1,Math.ceil(lvlAsked*0.6)),got=lvlAsked>0&&lvlRight>=need;const badges=(save&&save.badges)||[];if(got&&!badges.includes(S.badge))badges.push(S.badge);
  save={lvl:Math.min(lvl+1,LAST),score,hero,mode,badges,carbon};store.set('symprun',save);
  const last=lvl===LAST;
