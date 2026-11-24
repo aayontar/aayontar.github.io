@@ -702,7 +702,7 @@ const nextQ=()=>{if(eraOf(lvl)+1!==qEra)queues=null;if(!queues||!(queues.c.lengt
 /* ---------- level generation ---------- */
 /* questions per symposium: 4 or 5, adding up to exactly 200 over the 42 symposia (gate 2 + cloud 1 + boxes, or 2 in a special stage + gate 2) */
 const QPL=Array.from({length:42},(_,i)=>[7,9,13,20,22,25,27,32,34,38].includes(i)?4:5);
-const genLevel=i=>{const r=rng(runSeed+i*7919+1);const len=Math.min(150,104+(i%5)*10);cols=len;map=[];boxes={};for(let x=0;x<len;x++)map.push(new Array(ROWS).fill(0));
+const genLevel=i=>{const r=rng(runSeed+i*7919+1);const Eg=eraOf(i),len=(Eg===2||Eg===6)?128+(i%3)*4:146+(i%3)*4;cols=len;map=[];boxes={};for(let x=0;x<len;x++)map.push(new Array(ROWS).fill(0));
  const ground=(x,top)=>{for(let y=top;y<ROWS;y++)map[x][y]=1};
  ents=[];let x=0,h=GROUND;const spots=[];
  const flat=n=>{for(let k=0;k<n&&x<len-14;k++,x++)ground(x,h)};
@@ -717,11 +717,15 @@ const genLevel=i=>{const r=rng(runSeed+i*7919+1);const len=Math.min(150,104+(i%5
   else{flat(8);foe(s+4);if(r()<0.5)foe(s+6)}
  }
  h=GROUND;while(x<len){ground(x,h);x++}
+ /* spread enemies evenly: at least one in every 16 columns of the course */
+ {const tp=tx=>{for(let y=0;y<ROWS;y++)if(map[tx][y]===1)return y;return ROWS};for(let sg=12;sg<len-20;sg+=16){if(ents.some(e=>e.x>=sg*TS&&e.x<(sg+16)*TS))continue;for(let d=0;d<10;d++){const tx=sg+4+d,t0=tp(tx);if(t0<ROWS&&tp(tx-1)===t0&&tp(tx+1)===t0){ents.push({x:tx*TS,y:t0*TS-10,vx:-0.45,alive:true});break}}}}
  /* place boxes on free spots: about half hold questions, the rest O2 or air */
  const placed=[];for(const [bx,by] of spots){if(by<2||bx>=len-14||map[bx][by]!==0&&map[bx][by]!==2)continue;let top=ROWS;for(let y=by+1;y<ROWS;y++)if(map[bx][y]===1){top=y;break}if(top-by<3&&map[bx][by]!==2)continue;map[bx][by]=3;placed.push(bx+','+by)}
  for(let k=14;placed.length<6&&k<len-20;k+=7){let top=ROWS;for(let y=0;y<ROWS;y++)if(map[k][y]===1){top=y;break}const by=top-3-(k%3);if(top<ROWS&&by>1&&map[k][by]===0&&map[k][by+1]===0&&map[k][by+2]===0){map[k][by]=3;placed.push(k+','+by)}}
- shuffle(placed,r);const nq=Math.min(QPL[i]-3,placed.length);
- placed.forEach((k,j)=>{boxes[k]=j<nq?'q':(r()<0.58?'o2':'air')});
+ const nq=Math.min(QPL[i]-3,placed.length);placed.sort((a,b)=>parseInt(a)-parseInt(b));
+ /* question boxes spread along the course (about a third and two thirds of the way), the rest O2 or air */
+ const qset=new Set(),want=nq===1?[0.45]:[0.3,0.68];for(const f of want.slice(0,nq)){let best=-1,bd=1e9;placed.forEach((k,j)=>{if(qset.has(j))return;const d=Math.abs(parseInt(k)/len-f);if(d<bd){bd=d;best=j}});if(best>=0)qset.add(best)}
+ placed.forEach((k,j)=>{boxes[k]=qset.has(j)?'q':(r()<0.58?'o2':'air')});
  clouds=[{x0:Math.floor(len*0.5)*TS,st:'wait'}];if(i>=3)clouds.push({x0:Math.floor(len*0.78)*TS,st:'wait',spray:true});caps=[];sootF=[];coolT=0;wasHot=false;
  for(const e of ents)if(i>=2&&r()<0.3){e.knock=true;e.kt=Math.floor(r()*200)}tokens=[];chain=0;maxChain=0;chainNext=0;
  if(eraOf(i)===1){
@@ -821,10 +825,16 @@ const CITY={
   const fx=((300-o*0.5)%700+700)%700-100;R(fx,BASE-60,40,60,'#6a5a7a');R(fx+40,BASE-60,26,60,'#cfe6ff');for(let j=0;j<6;j++)R(fx+42+j*4,BASE-60,1,60,'rgba(255,255,255,.8)');R(fx+66,BASE-60,40,60,'#6a5a7a');R(fx+36,BASE-8,36,8,'rgba(255,255,255,.7)');
   const tx=((140-o)%440+440)%440-40;R(tx,BASE-110,30,110,S.mid);R(tx+4,BASE-124,22,14,S.mid);R(tx+8,BASE-134,14,10,S.mid);R(tx+12,BASE-142,6,8,S.mid);R(tx+14,BASE-156,2,14,S.mid);for(let j=0;j<12;j++)for(let i=0;i<3;i++)R(tx+5+i*8,BASE-104+j*8,3,4,'rgba(255,235,190,.7)');
   for(let k=0;k<4;k++){const bx=((k*150+260-o)%600+600)%600-60;R(bx,BASE-46,34,46,'#7a4050');for(let j=0;j<4;j++)for(let i=0;i<3;i++)R(bx+5+i*10,BASE-40+j*10,4,5,'rgba(255,230,190,.6)')}},
- madison(o,S){R(0,150,W,26,'#4aa0c8');for(let i=0;i<14;i++)R(((i*53-o*0.4)%W+W)%W,154+(i*5)%18,12,1,'rgba(255,255,255,.6)');
-  for(let k=0;k<8;k++){const bx=((k*60-o*0.6)%480+480)%480-40;cx.fillStyle='#4f8a5a';cx.beginPath();cx.arc(bx+10,150,10,Math.PI,0);cx.fill();R(bx+9,148,2,4,'#3a5a3a')}
-  const cx0=((200-o)%540+540)%540-150;R(cx0,BASE-30,150,30,'#e8e6dc');for(let i=0;i<10;i++)R(cx0+6+i*14,BASE-28,4,28,'#cfcbbd');R(cx0+45,BASE-60,60,30,'#e8e6dc');for(let i=0;i<6;i++)R(cx0+49+i*9,BASE-58,3,28,'#cfcbbd');
-  cx.fillStyle='#f2f0e6';cx.beginPath();cx.ellipse(cx0+75,BASE-60,26,30,0,Math.PI,0);cx.fill();R(cx0+70,BASE-104,10,14,'#f2f0e6');R(cx0+74,BASE-114,2,10,'#c9a24a');R(cx0+72,BASE-118,6,5,'#c9a24a')},
+ madison(o,S){/* Madison 1948: the Wisconsin State Capitol (1917) on its isthmus, brick downtown and elms; no sea */
+  for(let k=0;k<9;k++){const bx=((k*58-o*0.5)%522+522)%522-50,h=26+(k*13)%30;R(bx,BASE-h,40,h,k%2?'#9a5a46':'#a8664e');for(let r2=0;r2<Math.floor(h/10);r2++)for(let c=0;c<4;c++)R(bx+5+c*9,BASE-h+5+r2*10,4,5,'#f0e2c0')}
+  for(let k=0;k<10;k++){const bx=((k*52-o*0.8)%520+520)%520-40;cx.fillStyle=k%2?'#4f8a5a':'#5f9a62';cx.beginPath();cx.arc(bx+10,BASE-18,13,0,7);cx.fill();R(bx+9,BASE-8,3,8,'#5a4030')}
+  const c0=((220-o)%560+560)%560-180,st='#eeebe0',sh='#d4cfbf',dk='#b9b3a0';
+  R(c0,BASE-34,180,34,st);R(c0,BASE-34,180,3,sh);for(let w=0;w<12;w++)R(c0+6+w*14.5,BASE-28,6,10,'#8a95a8');
+  for(const px of[c0+8,c0+132]){R(px,BASE-44,40,44,st);tri(px-2,BASE-44,px+20,BASE-56,px+42,BASE-44,sh);for(let q=0;q<5;q++)R(px+3+q*8,BASE-42,3,30,dk)}
+  R(c0+60,BASE-62,60,28,st);for(let q=0;q<9;q++)R(c0+63+q*6.6,BASE-60,3,26,dk);R(c0+58,BASE-64,64,3,sh);
+  cx.fillStyle=st;cx.beginPath();cx.moveTo(c0+66,BASE-64);cx.bezierCurveTo(c0+66,BASE-100,c0+80,BASE-112,c0+90,BASE-112);cx.bezierCurveTo(c0+100,BASE-112,c0+114,BASE-100,c0+114,BASE-64);cx.fill();
+  cx.strokeStyle=dk;cx.lineWidth=1;for(const t of[0.3,0.5,0.7]){cx.beginPath();cx.moveTo(c0+66+t*48,BASE-64);cx.quadraticCurveTo(c0+90+(t-0.5)*10,BASE-104,c0+90,BASE-111);cx.stroke()}
+  R(c0+86,BASE-122,8,10,st);R(c0+85,BASE-123,10,2,sh);R(c0+89,BASE-132,2,9,'#d4a83a');R(c0+87,BASE-136,6,4,'#d4a83a')},
  cambridge(o,S){
   /* Boston across the Charles, as it looked around 1952 */
   const bo=((40-o*0.3)%520+520)%520-80;
@@ -953,17 +963,7 @@ const draw=()=>{const S=SYMP[lvl];const g=cx.createLinearGradient(0,0,0,BASE);g.
  /* items rising from boxes */
  for(const p of pops){const px=p.x-cam,py=p.y-(40-p.t)*0.7;if(p.k==='o2'){cx.fillStyle='#ff5a5a';cx.beginPath();cx.arc(px-4,py,4,0,7);cx.arc(px+4,py,4,0,7);cx.fill();R(px-4,py-1,8,2,'#ffffff')}else if(p.k==='air'){cx.fillStyle='#ffffff';cx.beginPath();cx.ellipse(px,py,9,5,0,0,7);cx.fill();cx.fillStyle='#4fb6ff';cx.beginPath();cx.arc(px-3,py,2,0,7);cx.arc(px+3,py,2,0,7);cx.fill()}else{R(px-3,py-12,6,6,'#ffc23d')}p.t--}while(pops.length&&pops[0].t<=0)pops.shift();
  /* goal: a Pantheon-style temple of combustion, with symposium and city on the entablature */
- const gx=goalX-cam|0,gy=GROUND*TS;if(gx<W+120){const st='#efe7d3',sh='#cdbf9f',dk='#9c8d6c',top=gy-64;
-  cx.fillStyle=sh;cx.beginPath();cx.ellipse(gx+48,top,40,34,0,Math.PI,0);cx.fill();R(gx+8,top,80,20,sh);cx.fillStyle=st;cx.beginPath();cx.ellipse(gx+48,top-2,36,30,0,Math.PI,0);cx.fill();
-  for(let i=1;i<5;i++){cx.strokeStyle='rgba(156,141,108,.6)';cx.lineWidth=1;cx.beginPath();cx.ellipse(gx+48,top-2,36,30-i*6,0,Math.PI,0);cx.stroke()}
-  const fl=Math.sin(tick/5),oc=top-31;cx.fillStyle='#ff8a3d';cx.beginPath();cx.moveTo(gx+42,oc);cx.quadraticCurveTo(gx+48,oc-15-fl*3,gx+54,oc);cx.fill();cx.fillStyle='#ffd85a';cx.beginPath();cx.moveTo(gx+45,oc);cx.quadraticCurveTo(gx+48,oc-9-fl*2,gx+51,oc);cx.fill();R(gx+42,oc-1,12,2,dk);
-  R(gx-6,gy-6,108,6,sh);R(gx-2,gy-11,100,5,st);R(gx+2,gy-15,92,4,sh);
-  for(let i=0;i<8;i++){const c0=gx+5+i*11.5;R(c0,gy-45,6,30,st);R(c0+1,gy-45,1,30,'#fffaf0');R(c0+4,gy-45,1,30,dk);R(c0-1,gy-48,8,3,sh);R(c0-1,gy-16,8,2,sh)}
-  R(gx-2,top,100,16,st);R(gx-2,top+8,100,1,sh);R(gx-2,top+16,100,1,dk);
-  tri(gx-5,top,gx+48,top-20,gx+101,top,st);tri(gx+6,top-2,gx+48,top-16,gx+90,top-2,sh);
-  const city=(S.place.split(',')[0]||S.place).toUpperCase();cx.textAlign='center';cx.fillStyle='#4a3a20';
-  cx.font='7px Silkscreen, monospace';cx.fillText(S.n.toUpperCase()+' SYMPOSIUM '+S.y,gx+48,top+7);
-  cx.font=(city.length>13?'5':'6')+'px Silkscreen, monospace';cx.fillText(city,gx+48,top+15);cx.textAlign='start'}
+ {const gx=goalX-cam|0,gy=GROUND*TS;if(gx<W+120)drawGate(gx,gy,S)}
  /* clouds and falling questions */
  cx.save();cx.textAlign='center';for(const f of sootF){cx.fillStyle='#2a2a30';cx.beginPath();cx.arc(f.x-cam,f.y,3,0,7);cx.fill();if(f.lab){cx.font='7px Silkscreen, monospace';cx.lineWidth=3;cx.strokeStyle='rgba(0,0,0,.75)';cx.strokeText('SOOT',f.x-cam,f.y-6);cx.fillStyle='#e8e8e8';cx.fillText('SOOT',f.x-cam,f.y-6)}}cx.restore();
  for(const c of clouds){if(!c.spray||c.st!=='follow')continue;cx.save();const sp=c.t<90;for(let k=0;k<(sp?14:6);k++){const a=k*0.5+tick*0.1;R(c.x-cam-12+Math.cos(a)*14,c.y+12+((tick*2+k*9)%(sp?40:22)),2,2,'rgba(80,160,255,.85)')}cx.textAlign='center';cx.font='7px Silkscreen, monospace';cx.lineWidth=3;cx.strokeStyle='rgba(0,0,0,.75)';const lb=sp?'SPRAY':'SOOT';cx.strokeText(lb,c.x-cam-10,c.y-10);cx.fillStyle=sp?'#9fdcff':'#e8e8e8';cx.fillText(lb,c.x-cam-10,c.y-10);cx.restore()}
@@ -984,6 +984,17 @@ const draw=()=>{const S=SYMP[lvl];const g=cx.createLinearGradient(0,0,0,BASE);g.
   if(boost>0){const a=0.55+0.25*Math.sin(tick/3),fade=boost<90&&Math.floor(tick/5)%2;if(!fade){cx.fillStyle=`rgba(159,220,255,${a*0.35})`;cx.fillRect(hx-3,hy-3,18,22);cx.strokeStyle=`rgba(220,245,255,${a})`;cx.lineWidth=1;cx.strokeRect(hx-3.5,hy-3.5,19,23)}}
   cx.save();if(P.face<0){cx.translate(hx+12,hy);cx.scale(-1,1);cx.drawImage(fr,0,0)}else cx.drawImage(fr,hx,hy);cx.restore()}};
 
+const drawGate=(gx,gy,S)=>{const st='#efe7d3',sh='#cdbf9f',dk='#9c8d6c',top=gy-64;
+  cx.fillStyle=sh;cx.beginPath();cx.ellipse(gx+48,top,40,34,0,Math.PI,0);cx.fill();R(gx+8,top,80,20,sh);cx.fillStyle=st;cx.beginPath();cx.ellipse(gx+48,top-2,36,30,0,Math.PI,0);cx.fill();
+  for(let i=1;i<5;i++){cx.strokeStyle='rgba(156,141,108,.6)';cx.lineWidth=1;cx.beginPath();cx.ellipse(gx+48,top-2,36,30-i*6,0,Math.PI,0);cx.stroke()}
+  const fl=Math.sin(tick/5),oc=top-31;cx.fillStyle='#ff8a3d';cx.beginPath();cx.moveTo(gx+42,oc);cx.quadraticCurveTo(gx+48,oc-15-fl*3,gx+54,oc);cx.fill();cx.fillStyle='#ffd85a';cx.beginPath();cx.moveTo(gx+45,oc);cx.quadraticCurveTo(gx+48,oc-9-fl*2,gx+51,oc);cx.fill();R(gx+42,oc-1,12,2,dk);
+  R(gx-6,gy-6,108,6,sh);R(gx-2,gy-11,100,5,st);R(gx+2,gy-15,92,4,sh);
+  for(let i=0;i<8;i++){const c0=gx+5+i*11.5;R(c0,gy-45,6,30,st);R(c0+1,gy-45,1,30,'#fffaf0');R(c0+4,gy-45,1,30,dk);R(c0-1,gy-48,8,3,sh);R(c0-1,gy-16,8,2,sh)}
+  R(gx-2,top,100,16,st);R(gx-2,top+8,100,1,sh);R(gx-2,top+16,100,1,dk);
+  tri(gx-5,top,gx+48,top-20,gx+101,top,st);tri(gx+6,top-2,gx+48,top-16,gx+90,top-2,sh);
+  const city=(S.place.split(',')[0]||S.place).toUpperCase();cx.textAlign='center';cx.fillStyle='#4a3a20';
+  cx.font='7px Silkscreen, monospace';cx.fillText(S.n.toUpperCase()+' SYMPOSIUM '+S.y,gx+48,top+7);
+  cx.font=(city.length>13?'5':'6')+'px Silkscreen, monospace';cx.fillText(city,gx+48,top+15);cx.textAlign='start'};
 /* ---------- special stages: balloon flight, catalyst maze, rising plume, knowledge sort ---------- */
 const SPECIAL={7:'balloon',9:'sortA',13:'maze',25:'climb',32:'sortB'};
 const MINFO={
@@ -1064,6 +1075,7 @@ const MINI={on:false,kind:null,M:null,
    if(!blink){cx.fillStyle=gl;cx.beginPath();cx.arc(bx,by,15,0,7);cx.fill();cx.strokeStyle=`rgba(255,220,160,${0.5+0.3*heat})`;cx.lineWidth=1;cx.beginPath();cx.arc(bx,by,12,0,7);cx.stroke();cx.drawImage(F.idle,bx-6,by-8)}
    for(let k=0;k<3;k++){const yy=by+16+((M.t*0.8+k*9)%24);cx.fillStyle=`rgba(255,200,140,${0.35-((M.t*0.8+k*9)%24)/80})`;cx.beginPath();cx.arc(bx-6+k*6,yy,2,0,7);cx.fill()}
    if(M.t<240)lab('Hold jump: heat up and rise by buoyancy',W/2,H-16,'#fff');
+   {const gx=M.len+40-M.x;if(gx<W+20){R(0,H-8,W,8,'#4f8a4a');drawGate(gx|0,H-8,S)}}
    const pr=Math.min(1,M.x/M.len);R(120,6,144,4,'rgba(0,0,0,.35)');R(120,6,144*pr,4,'#ffe066');cx.textAlign='left'}
   if(K==='maze'){const ac=S.acc;for(let y=0;y<13;y++)for(let x=0;x<24;x++){const c=M.g[y][x],X=x*16,Y=y*16+8;if(c==='#'){R(X,Y,16,16,'#141a3a');R(X+2,Y+2,12,12,ac);R(X+4,Y+4,8,8,'#141a3a')}
     else if(c==='.'){cx.fillStyle='#ff6a6a';cx.beginPath();cx.arc(X+6,Y+8,2,0,7);cx.arc(X+10,Y+8,2,0,7);cx.fill()}
@@ -1078,7 +1090,7 @@ const MINI={on:false,kind:null,M:null,
    for(const pl of M.plats){const y=pl.y-cy;if(y<-10||y>H+10)continue;cx.fillStyle='rgba(255,255,255,.85)';cx.beginPath();cx.ellipse(pl.x+pl.w/2,y+3,pl.w/2,5,0,0,7);cx.fill();cx.strokeStyle='rgba(255,138,61,.7)';cx.lineWidth=1;cx.beginPath();cx.arc(pl.x+pl.w/2,y+3,4,0,5);cx.stroke()}
    for(const s2 of M.soot){cx.fillStyle='#2a2a30';cx.beginPath();cx.arc(s2.x,s2.y-cy,3,0,7);cx.fill()}
    cx.textAlign='center';for(const it of M.items){if(it.got)continue;const y=it.y-cy;if(y<-20||y>H+20)continue;R(it.x-8,y-8,16,16,'#2a1a04');R(it.x-7,y-7,14,14,'#ffc23d');cx.fillStyle='#2a1a04';cx.font='10px Silkscreen, monospace';cx.fillText('?',it.x,y+4);cx.font='7px Silkscreen, monospace'}
-   if(-M.top-cy>-40){const y=-M.top-cy;R(0,y,W,4,'#ffe066');lab('TOP OF THE PLUME',W/2,y-6,'#ffe066')}
+   if(-M.top-cy>-140){const y=-M.top-cy;R(0,y,W,4,'#ffe066');drawGate(W/2-48|0,y|0,S)}
    const p=M.p;if(!blink)cx.drawImage(p.vy<0?F.jump:F.idle,p.x-1,p.y-cy);
    R(W-14,30,6,150,'rgba(0,0,0,.35)');R(W-14,30+150*(1-pr),6,150*pr,'#ffe066');cx.textAlign='left';lab(`Height ${Math.floor(M.best/16)} m`,150,7,'#ffe066')}
   if(K.startsWith('sort')){for(let k=0;k<3;k++){const x=k*128;R(x+2,H-20,124,20,'#141a3a');R(x+2,H-20,124,2,S.acc);cx.textAlign='center';lab(M.bins[k].toUpperCase(),x+64,H-6,'#ffe066');
