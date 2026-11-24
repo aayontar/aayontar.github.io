@@ -128,6 +128,14 @@ body{overscroll-behavior:none}
 }
 @media (pointer:coarse){.fs.ok{display:inline-flex}}
 .modal .pad{visibility:hidden}
+.ferman{margin:4px auto 6px;max-width:620px}
+.fm-roll{height:16px;border-radius:8px;background:linear-gradient(#8a6a3a,#d8b97a 45%,#8a6a3a);box-shadow:0 2px 4px rgba(0,0,0,.4)}
+.fm-body{background:linear-gradient(90deg,#e6d2a4,#f6ead0 12%,#f8eed6 50%,#f6ead0 88%,#e6d2a4);color:#3a2a14;padding:22px 30px 18px;margin:0 10px;text-align:center;font-family:Georgia,"Times New Roman",serif;font-size:16px;line-height:1.6;position:relative}
+.fm-body h2{font-family:Georgia,"Times New Roman",serif;font-size:22px;color:#6a1e14;margin:6px 0 12px;font-style:italic}
+.fm-body p{margin:0 0 10px;color:#3a2a14}
+.fm-k{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#7a5a2a!important}
+.fm-seal{display:flex;justify-content:center;margin-top:6px}
+@media (orientation:landscape) and (max-height:520px){.fm-body{padding:12px 18px;font-size:14px;line-height:1.45}.fm-body h2{font-size:18px;margin:2px 0 6px}}
 @media(prefers-reduced-motion:reduce){.qcard{transition:none!important}}
 </style>
 </head>
@@ -141,6 +149,7 @@ body{overscroll-behavior:none}
     <div class="ov on" id="ovTitle"><div class="card">
       <span class="k">A combustion and climate game</span>
       <h2>Symposium Run</h2>
+      <p class="climate" style="background:#1c1a10;border-color:#4b3d10;color:#f3e6c4;margin:6px 0 10px"><b>42 levels for 42 symposia.</b> The game is dedicated to the International Symposia on Combustion: each of its 42 levels honours one symposium, in its own host city and year, from the 1st in Swampscott (1928) to the 42nd in Brazil (2028).</p>
       <p>Travel through all 42 International Symposia on Combustion, from Swampscott 1928 to Brazil 2028, across eight eras: thermochemistry, kinetics, laminar flames, droplets and sprays, turbulence, pollutants, detonation and the energy transition. Each era plays differently. Stomp the emissions, collect O₂ and air, and open the <b style="color:var(--am)">?</b> blocks: some hold questions on combustion and climate. Questions change every time you play.</p>
       <p class="k" style="margin-top:12px">Choose your hero</p>
       <div class="pick" id="pick"></div>
@@ -163,7 +172,7 @@ body{overscroll-behavior:none}
   </div>
   <div class="pad" id="pad"><div><button type="button" data-k="L" aria-label="Left">◀</button><button type="button" data-k="R" aria-label="Right">▶</button><button type="button" data-k="D" aria-label="Down">▼</button></div><div><button type="button" class="j" data-k="J" aria-label="Jump">▲</button></div></div>
 </div>
-<div class="help"><span>Move <kbd>←</kbd> <kbd>→</kbd> or <kbd>A</kbd> <kbd>D</kbd> · Jump <kbd>Space</kbd> <kbd>↑</kbd> <kbd>W</kbd> · Answer <kbd>1</kbd>–<kbd>4</kbd></span><span>Stomp emissions from above. O₂ gives a hot flame with a 3-second shield; air gives a cool, low-temperature flame that NOx and soot cannot harm. Glowing enemies are about to knock. <span class="rot">Turn your phone sideways for a bigger screen.</span></span></div>
+<div class="help"><span>Move <kbd>←</kbd> <kbd>→</kbd> or <kbd>A</kbd> <kbd>D</kbd> · Jump <kbd>Space</kbd> <kbd>↑</kbd> <kbd>W</kbd> · Answer <kbd>1</kbd>–<kbd>4</kbd></span><span>Stomp emissions from above. Some float (lighter than air, like a methane leak) and some hop, like hot molecules jumping an activation barrier. O₂ gives a hot flame with a 3-second shield; air gives a cool, low-temperature flame that NOx and soot cannot harm. Glowing enemies are about to knock. <span class="rot">Turn your phone sideways for a bigger screen.</span></span></div>
 <footer>Symposium Run is an independent educational game by Ahmet Alper Yontar. It is not affiliated with or endorsed by The Combustion Institute. Symposium dates and places follow the Institute's public list. Numerical answers were computed with Cantera (GRI-Mech 3.0, chemical equilibrium); global warming potentials follow IPCC AR6. City skylines are drawn freely and are not to scale. The leaderboard stores only a username, a score and a random device code; no email is collected in the game. <a href="privacy.html" style="color:#9aa0ad">Privacy notice (KVKK)</a>.</footer>
 
 <script>
@@ -727,7 +736,9 @@ const genLevel=i=>{const r=rng(runSeed+i*7919+1);const Eg=eraOf(i),len=(Eg===2||
  const qset=new Set(),want=nq===1?[0.45]:[0.3,0.68];for(const f of want.slice(0,nq)){let best=-1,bd=1e9;placed.forEach((k,j)=>{if(qset.has(j))return;const d=Math.abs(parseInt(k)/len-f);if(d<bd){bd=d;best=j}});if(best>=0)qset.add(best)}
  placed.forEach((k,j)=>{boxes[k]=qset.has(j)?'q':(r()<0.58?'o2':'air')});
  clouds=[{x0:Math.floor(len*0.5)*TS,st:'wait'}];if(i>=3)clouds.push({x0:Math.floor(len*0.78)*TS,st:'wait',spray:true});caps=[];sootF=[];coolT=0;wasHot=false;
- for(const e of ents)if(i>=2&&r()<0.3){e.knock=true;e.kt=Math.floor(r()*200)}tokens=[];chain=0;maxChain=0;chainNext=0;
+ for(const e of ents)if(i>=2&&r()<0.3){e.knock=true;e.kt=Math.floor(r()*200)}
+ /* how emissions move: lighter-than-air CH4 floats; otherwise some float, some hop over the "activation barrier", the rest walk */
+ for(const e of ents){e.x0=e.x;e.gy=e.y;const q=r();e.mode=e.knock?'walk':SYMP[i].foe==='CH₄ leak'?'fly':q<0.3?'fly':q<0.6?'hop':'walk'}tokens=[];chain=0;maxChain=0;chainNext=0;
  if(eraOf(i)===1){
   const SP=['H','O','OH'];for(let tx=16;tx<len-18;tx+=4+Math.floor(r()*3)){let top=ROWS;for(let y=0;y<ROWS;y++)if(map[tx][y]===1){top=y;break}if(top>=ROWS)continue;
    const sp=r()<0.2?'HO2':SP[Math.floor(r()*3)];const yy=r()<0.55?top-1:top-3;if(map[tx][yy]!==0)continue;tokens.push({x:tx*TS+8,y:yy*TS+8,sp,taken:false})}
@@ -765,8 +776,11 @@ const update=()=>{tick++;if(boost>0){boost--;wasHot=true}else if(wasHot){wasHot=
  if(P.on&&solid(Math.floor(P.x/TS),Math.floor((P.y+P.h+1)/TS))&&solid(Math.floor((P.x+P.w-1)/TS),Math.floor((P.y+P.h+1)/TS))){P.sx=P.x;P.sy=P.y}
  if(P.inv>0)P.inv--;
  if(P.y>H+20){hurt(true);return}
- for(const e of ents){if(!e.alive)continue;if(!solid(Math.floor((e.x+6)/TS),Math.floor((e.y+10)/TS))){e.y+=2.5;if(e.y>H)e.alive=false;continue}const ex=e.x+e.vx,front=Math.floor((e.vx<0?ex:ex+12)/TS),foot=Math.floor((e.y+10)/TS),row=Math.floor((e.y+5)/TS);
-  if(solid(front,row)||!solid(front,foot))e.vx*=-1;else e.x=ex;
+ for(const e of ents){if(!e.alive)continue;if(e.mode==='fly'){e.t=(e.t||0)+1;const nx=e.x+e.vx;if(Math.abs(nx-e.x0)>72||solid(Math.floor((e.vx<0?nx:nx+12)/TS),Math.floor((e.y+5)/TS)))e.vx*=-1;else e.x=nx;e.y=e.gy-24+Math.sin(e.t/18)*5}
+  else{if(e.mode==='hop'){e.vy=(e.vy||0)+0.25;e.y+=e.vy;if(e.y>H){e.alive=false;continue}if(e.vy>0&&solid(Math.floor((e.x+6)/TS),Math.floor((e.y+10)/TS))){e.y=Math.floor((e.y+10)/TS)*TS-10;e.vy=0;e.hc=(e.hc||0)+1;if(e.hc>45){e.hc=0;e.vy=-4.2}}}
+   else if(!solid(Math.floor((e.x+6)/TS),Math.floor((e.y+10)/TS))){e.y+=2.5;if(e.y>H)e.alive=false;continue}
+   const ex=e.x+e.vx,front=Math.floor((e.vx<0?ex:ex+12)/TS),foot=Math.floor((e.y+10)/TS),row=Math.floor((e.y+5)/TS),air=e.mode==='hop'&&e.vy!==0;
+   if(solid(front,row)||(!air&&!solid(front,foot)))e.vx*=-1;else e.x=ex}
   if(P.x<e.x+12&&P.x+P.w>e.x&&P.y<e.y+10&&P.y+P.h>e.y){
    if(boost>0){e.alive=false;score+=20;carbon++;puffs.push({x:e.x+6,y:e.y+5,t:18});toast(`Shield! ${e.knock?'Soot':SYMP[lvl].foe} captured +20`,e.x,e.y-6,'#9fdcff')}
    else if(coolT>0&&(e.knock||/NOx|Soot/.test(SYMP[lvl].foe))&&P.inv===0){if(tick%30===0)toast('Low-temperature flame: no NOx or soot',P.x-10,P.y-20,'#9fdcff')}
@@ -991,8 +1005,8 @@ const draw=()=>{const S=SYMP[lvl];const g=cx.createLinearGradient(0,0,0,BASE);g.
  /* clouds and falling questions */
  cx.save();cx.textAlign='center';for(const f of sootF){cx.fillStyle='#2a2a30';cx.beginPath();cx.arc(f.x-cam,f.y,3,0,7);cx.fill();if(f.lab){cx.font='7px Silkscreen, monospace';cx.lineWidth=3;cx.strokeStyle='rgba(0,0,0,.75)';cx.strokeText('SOOT',f.x-cam,f.y-6);cx.fillStyle='#e8e8e8';cx.fillText('SOOT',f.x-cam,f.y-6)}}cx.restore();
  for(const c of clouds){if(!c.spray||c.st!=='follow')continue;cx.save();const sp=c.t<90;for(let k=0;k<(sp?14:6);k++){const a=k*0.5+tick*0.1;R(c.x-cam-12+Math.cos(a)*14,c.y+12+((tick*2+k*9)%(sp?40:22)),2,2,'rgba(80,160,255,.85)')}cx.textAlign='center';cx.font='7px Silkscreen, monospace';cx.lineWidth=3;cx.strokeStyle='rgba(0,0,0,.75)';const lb=sp?'SPRAY':'SOOT';cx.strokeText(lb,c.x-cam-10,c.y-10);cx.fillStyle=sp?'#9fdcff':'#e8e8e8';cx.fillText(lb,c.x-cam-10,c.y-10);cx.restore()}
- for(const c of clouds){if(c.st==='wait'||c.st==='done')continue;const x=c.x-cam;cx.fillStyle='#ffffff';cx.beginPath();cx.ellipse(x,c.y,16,8,0,0,7);cx.ellipse(x-10,c.y+3,9,6,0,0,7);cx.ellipse(x+11,c.y+3,9,6,0,0,7);cx.ellipse(x+2,c.y-6,9,7,0,0,7);cx.fill();R(x-5,c.y-1,2,3,'#2a2a3a');R(x+3,c.y-1,2,3,'#2a2a3a');R(x-2,c.y+4,4,1,'#2a2a3a');
-  R(x+15,c.y-12,3,12,'#ffffff');R(x+16,c.y-6,1,6,'#e2452b');cx.fillStyle='#e2452b';cx.beginPath();cx.arc(x+16.5,c.y+1,2.5,0,7);cx.fill()}
+ for(const c of clouds){if(c.st==='wait'||c.st==='done')continue;const x=c.x-cam;cx.fillStyle=c.spray?'#c4c8cf':'#ffffff';cx.beginPath();cx.ellipse(x,c.y,16,8,0,0,7);cx.ellipse(x-10,c.y+3,9,6,0,0,7);cx.ellipse(x+11,c.y+3,9,6,0,0,7);cx.ellipse(x+2,c.y-6,9,7,0,0,7);cx.fill();R(x-5,c.y-1,2,3,'#2a2a3a');R(x+3,c.y-1,2,3,'#2a2a3a');R(x-2,c.y+4,4,1,'#2a2a3a');
+  if(!c.spray){R(x+15,c.y-12,3,12,'#ffffff');R(x+16,c.y-6,1,6,'#e2452b');cx.fillStyle='#e2452b';cx.beginPath();cx.arc(x+16.5,c.y+1,2.5,0,7);cx.fill()}}
  for(const k of caps){const x=k.x-cam,y=k.y,gl=0.5+0.5*Math.sin(tick/6);cx.fillStyle=`rgba(255,194,61,${0.25+0.25*gl})`;cx.beginPath();cx.arc(x,y,9,0,7);cx.fill();cx.fillStyle='#ffc23d';cx.beginPath();cx.arc(x,y,6,0,7);cx.fill();cx.fillStyle='#2a1a04';cx.font='8px Silkscreen, monospace';cx.textAlign='center';cx.fillText('?',x,y+3);cx.textAlign='start'}
  /* enemies with their names */
  cx.font='7px Silkscreen, monospace';cx.textAlign='center';
@@ -1198,10 +1212,10 @@ const levelDone=()=>{const S=SYMP[lvl],need=Math.max(1,Math.ceil(lvlAsked*0.6)),
   <div class="row"><button class="btn main" id="nx" type="button">${last?'See the results':'Travel to the '+SYMP[lvl+1].n+' Symposium ('+SYMP[lvl+1].y+')'}</button><button class="btn" id="rp" type="button">Replay this symposium</button></div>`,()=>{
   document.getElementById('nx').onclick=()=>{hideCard();if(last)endGame();else{lvl++;genLevel(lvl);intro(lvl)}};
   document.getElementById('rp').onclick=()=>{hideCard();genLevel(lvl);intro(lvl)}})};
-const endGame=()=>{const ok=qLog.filter(q=>q.ok).length,b=(save&&save.badges)||[];
+const endGame=()=>{paused=true;showCard(`<div class="ferman"><div class="fm-roll"></div><div class="fm-body"><p class="fm-k">To every combustion researcher, past and present</p><h2>Combustion is always at the service of humanity.</h2><p>From the first hearth fire to the engines, power plants and rockets of today, burning has cooked our food, warmed our homes, moved us across the planet and carried us into space.</p><p>Thank you to every combustion researcher, past and present: the experimenters who measured flames, the theorists who explained them, the modellers who predicted them, and the students who will make them clean.</p><p>Your work keeps the light on while the world learns to burn without harming it.</p><div class="fm-seal" aria-hidden="true"><svg viewBox="0 0 40 40" width="40" height="40"><circle cx="20" cy="20" r="18" fill="#a3262a"/><circle cx="20" cy="20" r="14" fill="none" stroke="#d65a4a" stroke-width="1.5"/><path d="M20 9c3 5 7 8 7 13a7 7 0 0 1-14 0c0-3 2-5 3-7 1 3 2 4 4 4-1-3-1-6 0-10z" fill="#ffd27a"/></svg></div></div><div class="fm-roll"></div></div><div class="row" style="justify-content:center"><button class="btn main" id="fmOk" type="button">Continue</button></div>`,()=>document.getElementById('fmOk').onclick=()=>results())};
+const results=()=>{const ok=qLog.filter(q=>q.ok).length,b=(save&&save.badges)||[];
  showCard(`<span class="k">Journey complete · Swampscott 1928 to Brazil 2028</span><h2>All 42 symposia and 8 eras finished</h2><p>Score <b style="color:var(--am)">${score}</b> · ${ok} of ${qLog.length} questions right${qLog.length>=200?' (the full set of 200)':''} · <span style="color:var(--leaf)">${carbon} emissions captured</span></p>
   ${b.length?`<p class="k" style="margin-top:12px">Your badges</p>${b.map(x=>`<div class="badge">${medal('#ffc23d')}<b>${x}</b></div>`).join('')}`:''}
-  <div class="climate" style="background:#1c1a10;border-color:#4b3d10;color:#f3e6c4"><b style="font-size:18px">Combustion is always at the service of humanity.</b><br>From the first hearth fire to the engines, power plants and rockets of today, burning has cooked our food, warmed our homes, moved us across the planet and carried us into space. Thank you to every combustion researcher, past and present: the experimenters who measured flames, the theorists who explained them, the modellers who predicted them, and the students who will make them clean. Your work keeps the light on while the world learns to burn without harming it.</div>
   <div class="climate">Every flame in this game asks the same question as real combustion research today: how do we keep the energy and lose the carbon? Hydrogen, ammonia, biofuels, efficiency and carbon capture are all parts of the answer.</div>
   <p style="margin-top:12px">The real awards of the combustion community, such as the Bernard Lewis Gold Medal named after the chair of the 2nd and 3rd Symposia, are given by The Combustion Institute for lifetime contributions to the field.</p>
   ${saveForm()}
