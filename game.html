@@ -132,12 +132,24 @@ body{overscroll-behavior:none}
 }
 @media (pointer:coarse){.fs.ok{display:inline-flex}}
 .modal .pad{visibility:hidden}
+.hud .qbtn{pointer-events:auto;font:inherit;font-size:.9em;color:#fff;background:rgba(20,22,34,.78);border:1px solid #6a6f8a;border-radius:6px;padding:2px 8px;margin-left:8px;cursor:pointer}
+.hud .qbtn:hover{border-color:var(--am);color:var(--am)}
+.modal .hud .qbtn{visibility:hidden}
 .ferman{margin:4px auto 6px;max-width:620px}
 .fm-roll{height:16px;border-radius:8px;background:linear-gradient(#8a6a3a,#d8b97a 45%,#8a6a3a);box-shadow:0 2px 4px rgba(0,0,0,.4)}
 .fm-body{background:linear-gradient(90deg,#e6d2a4,#f6ead0 12%,#f8eed6 50%,#f6ead0 88%,#e6d2a4);color:#3a2a14;padding:22px 30px 18px;margin:0 10px;text-align:center;font-family:Georgia,"Times New Roman",serif;font-size:16px;line-height:1.6;position:relative}
 .fm-body h2{font-family:Georgia,"Times New Roman",serif;font-size:22px;color:#6a1e14;margin:6px 0 12px;font-style:italic}
 .fm-body p{margin:0 0 10px;color:#3a2a14}
 .fm-k{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#7a5a2a!important}
+.fm-journey{text-align:left}
+.fm-journey h2,.fm-journey .fm-k,.fm-journey>p{text-align:center}
+.fm-journey h3{font-family:Georgia,"Times New Roman",serif;font-size:16px;color:#6a1e14;margin:14px 0 4px;border-bottom:1px solid #c9ae78;padding-bottom:2px}
+.fm-journey h3 span{font-size:13px;color:#7a5a2a;font-weight:normal;margin-left:6px}
+.fm-journey ol{margin:0 0 0 26px;padding:0;columns:2;column-gap:28px;font-size:14px;line-height:1.5}
+.fm-journey li{break-inside:avoid;color:#3a2a14}
+.fm-journey li b{font-weight:600}
+.fm-tag{font-size:11px;background:#6a1e14;color:#f8eed6;border-radius:8px;padding:0 6px;margin-left:4px;white-space:nowrap}
+@media (max-width:560px){.fm-journey ol{columns:1}}
 .fm-seal{display:flex;justify-content:center;margin-top:6px}
 @media (orientation:landscape) and (max-height:520px){.fm-body{padding:12px 18px;font-size:14px;line-height:1.45}.fm-body h2{font-size:18px;margin:2px 0 6px}}
 @media(prefers-reduced-motion:reduce){.qcard{transition:none!important}}
@@ -148,19 +160,20 @@ body{overscroll-behavior:none}
 <div class="cab">
   <div class="screen" id="screen">
     <canvas id="cv" width="384" height="224" aria-label="Game screen"></canvas>
-    <div class="hud" aria-live="off"><span id="hlvl">1st Symposium · 1928</span><span>Score <b id="hsc">0</b> · <i id="hcc">CO₂ 0</i> · <span id="hlife">♥♥♥</span></span></div>
+    <div class="hud" aria-live="off"><span id="hlvl">1st Symposium · 1928</span><span>Score <b id="hsc">0</b> · <i id="hcc">CO₂ 0</i> · <span id="hlife">♥♥♥</span><button type="button" class="qbtn" id="quitBtn" hidden title="End the run here and save your score">⏏ Save &amp; quit</button></span></div>
 
     <div class="ov on" id="ovTitle"><div class="card">
       <span class="k">A combustion and climate game</span>
       <h2>Symposium Run</h2>
       <p class="climate" style="background:#1c1a10;border-color:#4b3d10;color:#f3e6c4;margin:6px 0 10px"><b>42 levels for 42 symposia.</b> The game is dedicated to the International Symposia on Combustion: each of its 42 levels honours one symposium, in its own host city and year, from the 1st in Swampscott (1928) to the 42nd in Brazil (2028).</p>
       <p>Travel through all 42 International Symposia on Combustion, from Swampscott 1928 to Brazil 2028, across eight eras: thermochemistry, kinetics, laminar flames, droplets and sprays, turbulence, pollutants, detonation and the energy transition. Each era plays differently. Stomp the emissions, collect O₂ and air, and open the <b style="color:var(--am)">?</b> blocks: some hold questions on combustion and climate. Questions change every time you play.</p>
+      <p style="font-size:14.5px"><b>Leaderboard.</b> You do not have to finish to get on the board: press <b>⏏ Save &amp; quit</b> at the top of the screen at any time to save your score. Finish all 42 symposia and you get a <b style="color:var(--am)">finisher's bonus of half your score</b>.</p>
       <p class="k" style="margin-top:12px">Choose your hero</p>
       <div class="pick" id="pick"></div>
       <p class="climate" style="background:#101a2e;border-color:#2b3f8a;color:#d8e6ff;font-size:14.5px"><b>Why your hero changes colour.</b> Spark is a burning flame kernel and Droplet a fuel droplet that burns as it evaporates, so both react to what they breathe. Grab <b>O₂</b> and the flame burns hotter and faster: your hero glows white-yellow, speeds up and gets a 3-second shield. When the shield fades, or when you grab <b>Air</b>, it cools into a blue low-temperature flame, like the faint blue glow of a cool flame. Burning cooler makes little NOx and soot, so NOx and soot enemies cannot hurt you while you are blue.</p>
       <p class="k" style="margin-top:12px">Choose your level</p>
       <div class="mode" id="mode"><button type="button" class="btn" data-m="ug" aria-pressed="true">Undergraduate</button><button type="button" class="btn" data-m="gr" aria-pressed="false">Graduate</button></div>
-      <div class="row"><button type="button" class="btn main" id="start">Start the journey</button><button type="button" class="btn" id="cont" hidden></button><button type="button" class="btn" id="lbBtn">Leaderboard</button><button type="button" class="btn fs" id="fsBtn">⛶ Full screen</button></div>
+      <div class="row"><button type="button" class="btn main" id="start">Start the journey</button><button type="button" class="btn" id="cont" hidden></button><button type="button" class="btn" id="lbBtn">Leaderboard</button><button type="button" class="btn" id="jrBtn">The journey</button><button type="button" class="btn fs" id="fsBtn">⛶ Full screen</button></div>
     </div></div>
 
     <div class="ov" id="ovQ"><div class="card qcard" id="qcard" role="dialog" aria-modal="true" aria-labelledby="qtext">
@@ -695,7 +708,7 @@ const FOESP=SYMP.map(S=>FOE.map(r=>mk(r,{s:S.foeC[2],g:S.foeC[0],l:S.foeC[1],e:"
 const cv=document.getElementById('cv'),cx=cv.getContext('2d');cx.lineJoin='round';cx.miterLimit=2;cx.imageSmoothingEnabled=false;
 const W=384,H=224,TS=16,ROWS=14,GROUND=11;
 let acid=null,coolT=0,wasHot=false,sootF=[],clouds=[],caps=[],qEra=1,tokens=[],chain=0,maxChain=0,chainNext=0,front=null,dsq=1,drops=[],eddies=[],boss=null,clean=0,fossil=0,dropsGot=0,eddyT=0;
-let hero='spark',mode='ug',lvl=0,score=0,lives=3,map,cols,ents,boxes,goalX,P,cam=0,paused=true,qLog=[],lvlRight=0,lvlAsked=0,boost=0,tick=0,carbon=0,queues=null,lastT='',qIdx=0,runSeed=Date.now()%2147483647,runSaved=false;
+let hero='spark',mode='ug',lvl=0,score=0,lives=3,map,cols,ents,boxes,goalX,P,cam=0,paused=true,qLog=[],lvlRight=0,lvlAsked=0,boost=0,tick=0,carbon=0,queues=null,lastT='',qIdx=0,runSeed=Date.now()%2147483647,runSaved=false,inRun=false,finBonus=0;
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 let save=store.get('symprun',null);
 const rng=s=>()=>(s=s*16807%2147483647)/2147483647;
@@ -1242,11 +1255,11 @@ const levelDone=()=>{const S=SYMP[lvl],need=Math.max(1,Math.ceil(lvlAsked*0.6)),
   ${got?`<div class="badge">${medal(S.acc)}<div><b>Badge earned: ${S.badge}</b><br><span style="color:var(--mute);font-size:14px">A game badge for answering most questions right.</span></div></div>`:`<p style="color:var(--mute)">Answer at least ${need} of ${lvlAsked} questions correctly to earn the ${S.badge} badge.</p>`}
   ${BOOKS[lvl]?`<div class="badge" style="background:#101a2e;border-color:#2b3f8a;align-items:flex-start"><svg viewBox="0 0 40 40" aria-hidden="true"><rect x="6" y="5" width="26" height="31" rx="2" fill="#4fb6ff"/><rect x="9" y="5" width="3" height="31" fill="#2f7fd6"/><rect x="15" y="11" width="13" height="3" fill="#0b2340"/><rect x="15" y="17" width="10" height="2" fill="#0b2340"/></svg><div><span class="k" style="color:#9fdcff">Book of the symposium</span><br><b>${BOOKS[lvl].t}</b><br><span style="font-size:14px;color:#cfd3dd">${BOOKS[lvl].a} · ${BOOKS[lvl].p}</span><p style="margin:6px 0 0;font-size:14.5px">${BOOKS[lvl].w}</p></div></div>`:''}
   <div class="row"><button class="btn main" id="nx" type="button">${last?'See the results':'Travel to the '+SYMP[lvl+1].n+' Symposium ('+SYMP[lvl+1].y+')'}</button><button class="btn" id="rp" type="button">Replay this symposium</button></div>`,()=>{
-  document.getElementById('nx').onclick=()=>{hideCard();if(last)endGame();else{lvl++;genLevel(lvl);intro(lvl)}};
+  document.getElementById('nx').onclick=()=>{hideCard();if(last){finBonus=Math.floor(score/2);score+=finBonus;inRun=false;quitB.hidden=true;hud();endGame()}else{lvl++;genLevel(lvl);intro(lvl)}};
   document.getElementById('rp').onclick=()=>{hideCard();genLevel(lvl);intro(lvl)}})};
 const endGame=()=>{paused=true;showCard(`<div class="ferman"><div class="fm-roll"></div><div class="fm-body"><p class="fm-k">To every combustion researcher, past and present</p><h2>Combustion is always at the service of humanity.</h2><p>From the first hearth fire to the engines, power plants and rockets of today, burning has cooked our food, warmed our homes, moved us across the planet and carried us into space.</p><p>Thank you to every combustion researcher, past and present: the experimenters who measured flames, the theorists who explained them, the modellers who predicted them, and the students who will make them clean.</p><p>Your work keeps the light on while the world learns to burn without harming it.</p><div class="fm-seal" aria-hidden="true"><svg viewBox="0 0 40 40" width="40" height="40"><circle cx="20" cy="20" r="18" fill="#a3262a"/><circle cx="20" cy="20" r="14" fill="none" stroke="#d65a4a" stroke-width="1.5"/><path d="M20 9c3 5 7 8 7 13a7 7 0 0 1-14 0c0-3 2-5 3-7 1 3 2 4 4 4-1-3-1-6 0-10z" fill="#ffd27a"/></svg></div></div><div class="fm-roll"></div></div><div class="row" style="justify-content:center"><button class="btn main" id="fmOk" type="button">Continue</button></div>`,()=>document.getElementById('fmOk').onclick=()=>results())};
 const results=()=>{const ok=qLog.filter(q=>q.ok).length,b=(save&&save.badges)||[];
- showCard(`<span class="k">Journey complete · Swampscott 1928 to Brazil 2028</span><h2>All 42 symposia and 8 eras finished</h2><p>Score <b style="color:var(--am)">${score}</b> · ${ok} of ${qLog.length} questions right${qLog.length>=200?' (the full set of 200)':''} · <span style="color:var(--leaf)">${carbon} emissions captured</span></p>
+ showCard(`<span class="k">Journey complete · Swampscott 1928 to Brazil 2028</span><h2>All 42 symposia and 8 eras finished</h2><p>Score <b style="color:var(--am)">${score}</b>${finBonus?` <span style="color:var(--mute)">(includes the finisher's bonus +${finBonus}, half of your journey score)</span>`:''} · ${ok} of ${qLog.length} questions right${qLog.length>=200?' (the full set of 200)':''} · <span style="color:var(--leaf)">${carbon} emissions captured</span></p>
   ${b.length?`<p class="k" style="margin-top:12px">Your badges</p>${b.map(x=>`<div class="badge">${medal('#ffc23d')}<b>${x}</b></div>`).join('')}`:''}
   <div class="climate">Every flame in this game asks the same question as real combustion research today: how do we keep the energy and lose the carbon? Hydrogen, ammonia, biofuels, efficiency and carbon capture are all parts of the answer.</div>
   <p style="margin-top:12px">The real awards of the combustion community, such as the Bernard Lewis Gold Medal named after the chair of the 2nd and 3rd Symposia, are given by The Combustion Institute for lifetime contributions to the field.</p>
@@ -1261,11 +1274,14 @@ pick.innerHTML=Object.entries(HEROES).map(([k,h])=>`<button type="button" class=
 pick.querySelectorAll('canvas').forEach(c=>c.getContext('2d').drawImage(HEROES[c.dataset.p].f.idle,0,0));
 pick.querySelectorAll('button').forEach(b=>b.onclick=()=>{hero=b.dataset.h;pick.querySelectorAll('button').forEach(o=>o.setAttribute('aria-pressed',String(o===b)))});
 document.querySelectorAll('#mode button').forEach(b=>b.onclick=()=>{mode=b.dataset.m;document.querySelectorAll('#mode button').forEach(o=>o.setAttribute('aria-pressed',String(o===b)))});
-const startRun=(from,keep)=>{runSeed=(Date.now()+Math.floor(Math.random()*1e6))%2147483647;queues=null;lvl=from;if(!keep){score=0;qLog=[];carbon=0}lives=3;runSaved=false;genLevel(lvl);document.getElementById('ovTitle').classList.remove('on');hud();intro(lvl)};
+const startRun=(from,keep)=>{runSeed=(Date.now()+Math.floor(Math.random()*1e6))%2147483647;queues=null;lvl=from;if(!keep){score=0;qLog=[];carbon=0}lives=3;runSaved=false;finBonus=0;inRun=true;quitB.hidden=false;genLevel(lvl);document.getElementById('ovTitle').classList.remove('on');hud();intro(lvl)};
 document.getElementById('start').onclick=()=>{save={lvl:0,score:0,hero,mode,badges:(save&&save.badges)||[],carbon:0};startRun(0)};
 const contB=document.getElementById('cont');
 if(save&&save.lvl>0){contB.hidden=false;contB.textContent=`Continue: ${SYMP[save.lvl].n} Symposium (${SYMP[save.lvl].y})`;contB.onclick=()=>{hero=save.hero||hero;mode=save.mode||mode;score=save.score||0;carbon=save.carbon||0;startRun(save.lvl,true)}}
 const title=document.getElementById('ovTitle');
+const quitB=document.getElementById('quitBtn');
+quitB.onclick=()=>{if(!inRun||document.querySelector('.ov.on'))return;const was=paused;paused=true;for(const k in keys)keys[k]=false;const S=SYMP[lvl];
+ showCard(`<span class="k">End the run here?</span><h2>You reached the ${S.n} Symposium</h2><p>${S.place} · ${S.y} · level ${lvl+1} of 42</p><p>Score <b style="color:var(--am)">${score}</b> · <span style="color:var(--leaf)">${carbon} emissions captured</span></p><p style="color:var(--mute);font-size:14px">You can save this score to the leaderboard now. Players who finish all 42 symposia get a finisher's bonus of half their score.</p>${saveForm()}<div class="row"><button class="btn main" id="qKeep" type="button">Keep playing</button><button class="btn" id="qEnd" type="button">End run</button></div>`,()=>{bindSave();document.getElementById('qKeep').onclick=()=>{hideCard();paused=was};document.getElementById('qEnd').onclick=()=>{hideCard();inRun=false;quitB.hidden=true;if(save&&save.lvl>0){contB.hidden=false;contB.textContent=`Continue: ${SYMP[save.lvl].n} Symposium (${SYMP[save.lvl].y})`}title.classList.add('on')}})};
 {const fb=document.getElementById('fsBtn'),de=document.documentElement,req=de.requestFullscreen||de.webkitRequestFullscreen;
  if(req&&(document.fullscreenEnabled||document.webkitFullscreenEnabled)){fb.classList.add('ok');fb.onclick=async()=>{try{if(document.fullscreenElement||document.webkitFullscreenElement){(document.exitFullscreen||document.webkitExitFullscreen).call(document)}else{await req.call(de);if(screen.orientation&&screen.orientation.lock)screen.orientation.lock('landscape').catch(()=>{})}}catch(e){}}}}
 /* keep the page from scrolling or zooming while playing on touch screens */
@@ -1274,6 +1290,11 @@ document.getElementById('pad').addEventListener('touchstart',e=>e.preventDefault
 document.addEventListener('gesturestart',e=>e.preventDefault());
 {const sync=()=>document.body.classList.toggle('modal',!!document.querySelector('.ov.on'));new MutationObserver(sync).observe(document.getElementById('screen'),{subtree:true,attributes:true,attributeFilter:['class']});sync()}
 document.getElementById('lbBtn').onclick=()=>{title.classList.remove('on');showBoard(()=>title.classList.add('on'))};
+/* opening scroll: the whole journey, era by era, so players know where they can reach */
+const showJourney=after=>{const tag=i=>SPECIAL[i]?' <span class="fm-tag">special stage</span>':ATMO[i]?' <span class="fm-tag">'+({acoustics:'acoustics',spectroscopy:'spectroscopy',laser:'laser lab',microgravity:'microgravity',engines:'engines',shock:'shock waves'}[ATMO[i]])+'</span>':(i===29||i===34)?' <span class="fm-tag">boss</span>':'';
+ const eras=ERAS.map((e,k)=>`<h3>${['I','II','III','IV','V','VI','VII','VIII'][k]}. ${e.name} <span>${e.years}</span></h3><ol start="${e.from+1}">${SYMP.slice(e.from,e.to+1).map((S,j)=>`<li><b>${S.place}</b> · ${S.y}${tag(e.from+j)}</li>`).join('')}</ol>`).join('');
+ showCard(`<div class="ferman"><div class="fm-roll"></div><div class="fm-body fm-journey"><p class="fm-k">Symposium Run · the journey</p><h2>42 Symposia on Combustion, 1928 to 2028</h2><p>Each level honours one International Symposium on Combustion, in its own city and year. Eight eras, each with its own way to play. How far will your flame go? You can save your score and leave at any point; reach Brazil 2028 and your score grows by half.</p>${eras}</div><div class="fm-roll"></div></div><div class="row" style="justify-content:center"><button class="btn main" id="jrOk" type="button">Begin</button></div>`,()=>document.getElementById('jrOk').onclick=()=>{ovCard.classList.remove('on');after()})};
+document.getElementById('jrBtn').onclick=()=>{title.classList.remove('on');showJourney(()=>title.classList.add('on'))};
 
 /* ---------- input ---------- */
 const km={ArrowLeft:'L',KeyA:'L',ArrowRight:'R',KeyD:'R',ArrowUp:'J',KeyW:'J',Space:'J',ArrowDown:'D',KeyS:'D'};
@@ -1305,6 +1326,7 @@ if(store.get('symprun-music',false)){const once=()=>{setMus(true);removeEventLis
 addEventListener('visibilitychange',()=>{if(!Music.ctx)return;if(document.hidden)Music.ctx.suspend();else if(musB.getAttribute('aria-pressed')==='true')Music.ctx.resume()});
 
 genLevel(0);hud();requestAnimationFrame(loop);
+title.classList.remove('on');showJourney(()=>title.classList.add('on'));
 }
 </script>
 </body>
