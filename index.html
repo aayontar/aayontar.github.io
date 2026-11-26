@@ -119,6 +119,15 @@ ol.pubs{list-style:none;padding:0;margin:24px 0 0;display:grid;grid-template-col
 .code button{color:var(--ink);border-color:var(--line);min-height:40px}
 .mini{position:relative;height:180px;border-radius:10px;overflow:hidden;background:var(--night)}
 .mini canvas{position:absolute;inset:0;width:100%;height:100%}
+.agents{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;margin-top:32px}
+.agent{border:1px solid var(--line);border-radius:16px;padding:24px;display:grid;grid-template-columns:132px minmax(0,1fr);gap:22px;align-items:start;background:var(--soft)}
+.agent img{width:132px;height:132px;border-radius:14px;background:#0b0c11;object-fit:contain}
+.agent h3{margin:0;font-size:24px;line-height:1.2}
+.agent .soon{display:inline-block;margin:8px 0 10px;font-size:12.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 10px;border-radius:999px;background:rgba(255,138,61,0.2);background:color-mix(in srgb,var(--fl) 20%,transparent);color:var(--ink)}
+.agent p{margin:0 0 8px;color:var(--mute);font-size:15.5px}
+.agent .tag{color:var(--ink);font-weight:600}
+@media(max-width:900px){.agents{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:480px){.agent{grid-template-columns:minmax(0,1fr)}.agent img{width:112px;height:112px}}
 .codenote{font-size:14px;color:var(--mute);margin-top:18px}
 .enjoy{background:#120c08;color:#f3efe8}
 .enjoy .wrap{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:40px;align-items:center}
@@ -171,7 +180,7 @@ footer a{color:#c9cdd8}
 </style>
 </head>
 <body>
-<nav aria-label="Main"><div class="wrap"><b>A. A. Yontar</b><div class="links"><a href="#research">Research</a><a href="#path">Path</a><a href="#publications">Publications</a><a href="#code">Open code</a><a href="#events">Events</a><a href="#enjoy">Enjoy</a><a href="#teaching">Teaching</a><a href="#industry">Industry</a><a class="join" href="#join">Join</a></div></div></nav>
+<nav aria-label="Main"><div class="wrap"><b>A. A. Yontar</b><div class="links"><a href="#research">Research</a><a href="#path">Path</a><a href="#publications">Publications</a><a href="#code">Open code</a><a href="#agents">Agents</a><a href="#events">Events</a><a href="#enjoy">Enjoy</a><a href="#teaching">Teaching</a><a href="#industry">Industry</a><a class="join" href="#join">Join</a></div></div></nav>
 
 <header class="hero" aria-label="Interactive flame">
   <canvas id="flame" aria-label="Live simulation of a premixed flame front. Click to ignite a new kernel."></canvas>
@@ -282,7 +291,23 @@ footer a{color:#c9cdd8}
   <p class="codenote">Tested with Python 3.13 and Cantera 3.2 (<code>pip install cantera</code>). The GRI-Mech 3.0 mechanism ships with Cantera; for ammonia flames, load a dedicated NH₃ mechanism instead.</p>
 </div></section>
 
-<section class="band" id="events"><div class="wrap">
+<section class="band" id="agents"><div class="wrap">
+  <h2>Research agents, coming soon</h2>
+  <p class="lede">Two research agents for Claude by Ahmet Alper Yontar, both working on open data only. They will be in service soon.</p>
+  <div class="agents">
+    <article class="agent"><img src="agent-simit-logo.svg" alt="Agent Simit logo: a simit with H₂ in its centre on a background of falling green digits" width="132" height="132" loading="lazy">
+      <div><h3>Agent Simit</h3><span class="soon">Coming soon</span>
+      <p class="tag">A literature and data agent for hydrogen combustion.</p>
+      <p>Describe your study and give three keywords. Agent Simit searches OpenAlex, ranks the papers for your study, checks ChemKED and retractions, extracts ignition-delay and burning-velocity data from papers you can access, and turns verified data into open datasets. It also ranks kinetic mechanisms against the verified data in Cantera. Every value traces to a DOI and stays unverified until a person checks it.</p></div></article>
+    <article class="agent"><img src="gtea-logo.svg" alt="GTeA logo: a Turkish tea glass formed by two facing sigma signs, filled with green banknotes and a coin" width="132" height="132" loading="lazy">
+      <div><h3>GTeA · Green Techno-economic Analysis</h3><span class="soon">Coming soon</span>
+      <p class="tag">Techno-economic analysis of biofuels and biomass, on open data only.</p>
+      <p>Ask what a biofuel or biomass pathway costs, emits or saves: its CO₂ abatement cost, break-even or parity price, price paths to 2035 and 2050, and its energy, water, land and indirect land-use footprint. Covers FAME biodiesel, maize and corn-stover ethanol, HVO, gasification, fast pyrolysis, wood pellets and biomethane.</p></div></article>
+  </div>
+  <p class="codenote">© 2026 Ahmet Alper Yontar. Both agents will be free to use for research, teaching and personal purposes with citation; copying, redistribution, modified versions and commercial use require written permission.</p>
+</div></section>
+
+<section class="band soft" id="events"><div class="wrap">
   <h2>Events in combustion and fuels</h2>
   <p class="lede">Upcoming symposia, workshops and schools around the world, with their next deadlines. Each entry is checked against the organizer's own page; finished events drop off automatically.</p>
   <p class="next" id="nextdl" hidden></p>
